@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#293e36">
+  <meta name="theme-color" content="#f6f6f3">
   <meta name="robots" content="noindex, nofollow">
-  <meta name="description" content="Внутренняя учебная база клиники Love my body: саммари по направлениям диагностики и терапии.">
-  <title>LMB Академия — обучение команды</title>
+  <meta name="description" content="Учебная база клиники Love my body: саммари по направлениям диагностики и терапии.">
+  <title>ЛМБ Академия</title>
   <link rel="stylesheet" href="styles.css">
   <script src="data.js" defer></script>
   <script src="app.js" defer></script>
@@ -14,22 +14,20 @@
 <body>
   <a href="#main" class="skip-link">К содержанию</a>
   <header class="topbar">
-    <a href="#" class="brand" aria-label="LMB Академия, главная"><span class="brand-mark">LMB<span>•</span></span><span class="brand-label">АКАДЕМИЯ<span>Love my body</span></span></a>
-    <div class="top-note">ЗНАНИЯ КОМАНДЫ. ЕДИНЫЙ ПОДХОД.</div>
-    <span class="edition" id="edition"><i></i> Рабочая редакция</span>
-    <button type="button" id="menu-toggle" class="menu-toggle" aria-expanded="false" aria-controls="sidebar" aria-label="Открыть меню">☰</button>
+    <a href="#" class="brand" id="brand">ЛМБ Академия</a>
+    <span class="mode-label" id="mode-label" hidden>Предпросмотр</span>
+    <button type="button" id="menu-toggle" class="menu-toggle" aria-expanded="false" aria-controls="sidebar">Меню</button>
   </header>
   <div class="shell">
-    <aside id="sidebar" class="sidebar" aria-label="Навигация по обучению">
-      <div class="side-kicker">ОБУЧЕНИЕ В ЛМБ</div>
-      <a href="#" class="catalog-link" id="catalog-link"><span aria-hidden="true">▦</span> Каталог направлений <small id="module-total"></small></a>
-      <div class="side-heading">ИНСТРУМЕНТЫ КЛИНИКИ</div>
-      <nav id="module-nav" aria-label="Направления"></nav>
-      <div class="side-bottom"><div class="side-monogram" aria-hidden="true">L</div><p>От понимания механизма<br>к клиническому решению.</p><span>ВНУТРЕННЕЕ ОБУЧЕНИЕ</span></div>
+    <aside id="sidebar" class="sidebar">
+      <nav aria-label="Направления">
+        <a href="#" class="all-link" id="catalog-link">Все направления</a>
+        <div id="module-nav"></div>
+      </nav>
     </aside>
     <main id="main" tabindex="-1"><noscript>Для работы учебной базы нужен JavaScript.</noscript></main>
   </div>
-  <footer><span>LMB Академия <span class="footer-dot">·</span> Love my body</span><span>Учебная база клиники <span class="footer-dot">·</span> <span id="build-date"></span></span></footer>
+  <footer>ЛМБ Академия</footer>
   <div id="live" class="sr-only" role="status" aria-live="polite"></div>
 </body>
 </html>

@@ -135,13 +135,14 @@ class Publication(Base):
 
     def test_previous_approved_version_stays_until_new_one_ready(self):
         self.approve("infusion-intro")
+        approved_version = self.project().lessons["infusion-intro"]["variants"]["doctors"]["version"]
         md = self.tmp / "content" / "lessons" / "infusion-intro" / "doctors.md"
         md.write_text(md.read_text(encoding="utf-8") + "\n## Новый раздел\n\nТекст новой редакции.\n", encoding="utf-8")
         self.edit_meta("infusion-intro", lambda m: m["variants"]["doctors"].update(version="0.2.0", editorialStatus="in_review", approval=None))
         report, out = self.build("production")
         self.assertEqual(report.errors, [])
         v = lmb.read_data(out)["lessons"]["infusion-intro"]["variants"]["doctors"]
-        self.assertEqual((v["state"], v["version"]), ("approved", "0.1.0"))
+        self.assertEqual((v["state"], v["version"]), ("approved", approved_version))
         self.assertIn("ранее утверждённая", v["fallbackNote"])
         self.assertNotIn("Текст новой редакции", self.dist_text(out))
 

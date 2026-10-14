@@ -26,7 +26,7 @@ from pathlib import Path
 
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 
-VARIANTS = [("doctors", "Для врачей"), ("admins", "Для администраторов")]
+VARIANTS = [("doctors", "Врачам"), ("admins", "Администраторам")]
 VARIANT_IDS = [v for v, _ in VARIANTS]
 EDITORIAL_STATUSES = {"draft", "needs_clarification", "in_review", "approved", "archived"}
 CONTENT_KINDS = {"outline", "summary"}
@@ -108,7 +108,7 @@ class Project:
 
 # ---------------------------------------------------------------- контрольная сумма
 
-CHECKSUM_FIELDS = ["version", "contentKind", "coverage", "goal", "takeaway", "scope", "sources", "claims", "derivedFrom"]
+CHECKSUM_FIELDS = ["version", "contentKind", "coverage", "goal", "takeaway", "scope", "subtitle", "sources", "claims", "derivedFrom"]
 
 
 def compute_checksum(lesson_meta, variant, body_text):
@@ -223,7 +223,7 @@ def render_markdown(md, link_check):
                 section_no += 1
                 sid = f"section-{section_no}"
                 toc.append({"id": sid, "title": title})
-                out.append(f'</section><section class="text-section" id="{sid}"><h2><span>{section_no:02d}</span>{render_inline(title, link_check)}</h2>')
+                out.append(f'</section><section class="text-section" id="{sid}"><h2>{render_inline(title, link_check)}</h2>')
             else:
                 out.append(f"<h{level}>{render_inline(title, link_check)}</h{level}>")
             i += 1; continue
@@ -466,7 +466,8 @@ def resolve_variant(project, lid, vname, mode, r):
     body_html, toc = render_markdown(body, make_link_check(project, where, r))
     out = {
         "state": state, "version": vv["version"], "updatedAt": vv.get("updatedAt"), "nextReviewAt": vv.get("nextReviewAt"),
-        "goal": vv.get("goal"), "takeaway": vv.get("takeaway"), "scope": vv.get("scope"), "coverage": vv.get("coverage", []),
+        "goal": vv.get("goal"), "takeaway": vv.get("takeaway"), "scope": vv.get("scope"), "subtitle": vv.get("subtitle"),
+        "coverage": vv.get("coverage", []),
         "html": body_html, "toc": toc, "program": vv.get("program") or [t["title"] for t in toc],
         "sources": [{"id": s["id"], "locator": s.get("locator"), "supports": s.get("supports")} for s in vv.get("sources", [])],
         "text": html_to_text(body_html),
@@ -667,7 +668,7 @@ def cmd_new_lesson(project, args):
     body = body[:body.index("Редакторские вопросы")].rstrip() + "\n" if "Редакторские вопросы" in body else body
     write_text(d / "doctors.md", body)
     empty = {"version": "0.0.0", "editorialStatus": "draft", "contentKind": "outline", "coverage": [], "body": None,
-             "updatedAt": None, "nextReviewAt": None, "goal": None, "takeaway": None, "scope": None, "program": [],
+             "updatedAt": None, "nextReviewAt": None, "goal": None, "takeaway": None, "scope": None, "subtitle": None, "program": [],
              "sources": [], "claims": [], "approval": None}
     meta = {"schemaVersion": 1, "lessonId": args.lesson, "moduleId": args.module, "title": args.title,
             "order": len(mod["lessons"]) + 1, "keywords": [], "relatedLessonIds": [], "alsoInModules": [],
