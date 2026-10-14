@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "lessonId": "peptide-intro",
+  "moduleId": "peptide",
+  "title": "Пептидная терапия",
+  "order": 1,
+  "keywords": [],
+  "relatedLessonIds": [],
+  "alsoInModules": [],
+  "migratedFrom": {
+    "prototypeCommit": "1bdedd4630433560cec01c17d287649d455775e2",
+    "route": "#module/peptide"
+  },
+  "variants": {
+    "doctors": {
+      "version": "0.1.0",
+      "editorialStatus": "draft",
+      "contentKind": "summary",
+      "coverage": [
+        "safety"
+      ],
+      "body": "doctors.md",
+      "updatedAt": "2026-10-14",
+      "nextReviewAt": null,
+      "goal": "Индивидуальная оценка препарата, точность дозы и безопасность подкожного введения.",
+      "takeaway": "Свойства, показания и условия введения проверяют для каждого конкретного препарата.",
+      "scope": "Саммари СОП-08",
+      "program": [
+        "Что объединяет раздел",
+        "До назначения",
+        "Хранение и подготовка",
+        "Доза и устройство",
+        "Подкожное введение",
+        "Наблюдение и реакции",
+        "Оценка курса",
+        "Что требуется для полного модуля"
+      ],
+      "sources": [
+        {
+          "id": "lmb-sop-08",
+          "locator": null,
+          "supports": "Хранение, подготовка, подкожное введение и последующее наблюдение. Версия 1.0."
+        }
+      ],
+      "claims": [],
+      "approval": null
+    },
+    "admins": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "program": [],
+      "sources": [],
+      "claims": [],
+      "derivedFrom": null,
+      "approval": null
+    }
+  }
+}

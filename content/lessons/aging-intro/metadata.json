@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "lessonId": "aging-intro",
+  "moduleId": "aging",
+  "title": "Научные основы антиэйдж",
+  "order": 1,
+  "keywords": [],
+  "relatedLessonIds": [],
+  "alsoInModules": [],
+  "migratedFrom": {
+    "prototypeCommit": "1bdedd4630433560cec01c17d287649d455775e2",
+    "route": "#module/aging"
+  },
+  "variants": {
+    "doctors": {
+      "version": "0.1.0",
+      "editorialStatus": "draft",
+      "contentKind": "summary",
+      "coverage": [
+        "concept"
+      ],
+      "body": "doctors.md",
+      "updatedAt": "2026-10-14",
+      "nextReviewAt": null,
+      "goal": "Механизмы старения, функциональные резервы и цели клинического сопровождения.",
+      "takeaway": "Оценивать здоровье через функцию, клинические риски и измеримый результат сопровождения.",
+      "scope": "Вводное научное саммари",
+      "program": [
+        "Цель направления",
+        "Двенадцать признаков старения",
+        "От механизма к клинике",
+        "Биологический возраст",
+        "Мышцы и метаболическое здоровье",
+        "Практический фундамент",
+        "Маршрут сопровождения",
+        "Связь с другими модулями"
+      ],
+      "sources": [
+        {
+          "id": "lmb-aging-lecture",
+          "locator": null,
+          "supports": "Учебная лекция: функция, биологический возраст, мышцы и клиническое сопровождение."
+        },
+        {
+          "id": "lopez-otin-2023",
+          "locator": null,
+          "supports": "Научная модель двенадцати признаков старения. DOI: 10.1016/j.cell.2022.11.001."
+        },
+        {
+          "id": "who-ageing-health",
+          "locator": null,
+          "supports": null
+        }
+      ],
+      "claims": [],
+      "approval": null
+    },
+    "admins": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "program": [],
+      "sources": [],
+      "claims": [],
+      "derivedFrom": null,
+      "approval": null
+    }
+  }
+}

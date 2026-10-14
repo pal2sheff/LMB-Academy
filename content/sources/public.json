@@ -1,0 +1,82 @@
+[
+  {
+    "id": "lmb-aging-lecture",
+    "title": "Взлом_системы_старения_лекция_40_минут.docx",
+    "author": null,
+    "year": null,
+    "type": "Учебная лекция (внутренний материал)",
+    "url": null
+  },
+  {
+    "id": "lmb-mito-presentation",
+    "title": "МИТОпаспорт_и_12_признаков_старения.pptx",
+    "author": null,
+    "year": null,
+    "type": "Учебная презентация (внутренний материал)",
+    "url": null
+  },
+  {
+    "id": "lmb-mk-mito-program",
+    "title": "МК митохондрии 05.07.26docx.docx",
+    "author": null,
+    "year": null,
+    "type": "Программа мастер-класса (внутренний материал)",
+    "url": null
+  },
+  {
+    "id": "lmb-sop-08",
+    "title": "СОП-08_Подкожное_введение_пептидных_препаратов_Love_my_body.docx",
+    "author": null,
+    "year": null,
+    "type": "СОП клиники",
+    "url": null
+  },
+  {
+    "id": "lmb-sop-09",
+    "title": "СОП-09_Проведение_лимфотропной_терапии_Love_my_body.docx",
+    "author": null,
+    "year": null,
+    "type": "СОП клиники",
+    "url": null
+  },
+  {
+    "id": "lmb-sop-10",
+    "title": "СОП-10_Озонотерапия_и_БАГОТ_Love_my_body.docx",
+    "author": null,
+    "year": null,
+    "type": "СОП клиники",
+    "url": null
+  },
+  {
+    "id": "lmb-sop-12",
+    "title": "СОП-12_Назначение_и_сопровождение_инфузионной_терапии_Love_my_body.docx",
+    "author": null,
+    "year": null,
+    "type": "СОП клиники",
+    "url": null
+  },
+  {
+    "id": "lopez-otin-2023",
+    "title": "López-Otín C. et al. Hallmarks of aging: An expanding universe. Cell. 2023;186:243–278.",
+    "author": "López-Otín C. et al.",
+    "year": 2023,
+    "type": "Научная публикация",
+    "url": "https://doi.org/10.1016/j.cell.2022.11.001"
+  },
+  {
+    "id": "who-ageing-health",
+    "title": "ВОЗ: старение и здоровье",
+    "author": null,
+    "year": null,
+    "type": "Материал ВОЗ",
+    "url": "https://www.who.int/news-room/fact-sheets/detail/ageing-and-health"
+  },
+  {
+    "id": "who-medication-safety",
+    "title": "ВОЗ: безопасность лекарственной терапии",
+    "author": null,
+    "year": null,
+    "type": "Материал ВОЗ",
+    "url": "https://www.who.int/initiatives/medication-without-harm/medication-safety-in-high-risk-situations"
+  }
+]

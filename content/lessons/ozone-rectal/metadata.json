@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "lessonId": "ozone-rectal",
+  "moduleId": "ozone",
+  "title": "Ректальные инсуффляции",
+  "order": 4,
+  "keywords": [],
+  "relatedLessonIds": [
+    "ozone-intro"
+  ],
+  "alsoInModules": [],
+  "variants": {
+    "doctors": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "program": [
+        "Клинические задачи",
+        "Отбор пациента",
+        "Противопоказания",
+        "Оборудование и одноразовые принадлежности",
+        "Параметры",
+        "Наблюдение"
+      ],
+      "sources": [],
+      "claims": [],
+      "approval": null,
+      "programNote": "Нужны отдельные учебные материалы; СОП-10 не распространяется на этот способ."
+    },
+    "admins": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "program": [],
+      "sources": [],
+      "claims": [],
+      "derivedFrom": null,
+      "approval": null
+    }
+  }
+}

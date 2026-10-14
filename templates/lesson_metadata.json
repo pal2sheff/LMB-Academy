@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "lessonId": "infusion-vitamins",
+  "moduleId": "infusion",
+  "title": "Название темы",
+  "order": 2,
+  "keywords": ["ключевое слово"],
+  "relatedLessonIds": ["infusion-intro"],
+  "alsoInModules": [],
+  "variants": {
+    "doctors": {
+      "version": "0.1.0",
+      "editorialStatus": "draft",
+      "contentKind": "summary",
+      "coverage": ["clinical"],
+      "body": "doctors.md",
+      "updatedAt": "2026-10-20",
+      "nextReviewAt": null,
+      "goal": "Для чего читать: клиническая задача в одном-двух предложениях.",
+      "takeaway": "Ключевая мысль без рекламных обещаний.",
+      "scope": "Саммари лекции и СОП",
+      "program": ["Раздел 1", "Раздел 2"],
+      "sources": [{"id": "lmb-sop-12", "locator": "разделы 4–6", "supports": "Что подтверждает источник"}],
+      "claims": [{"id": "c1", "text": "Существенное утверждение", "sourceId": "lmb-sop-12", "locator": "раздел 5.2"}],
+      "approval": null
+    },
+    "admins": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "program": [],
+      "sources": [],
+      "claims": [],
+      "derivedFrom": null,
+      "approval": null
+    }
+  }
+}

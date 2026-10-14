@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "lessonId": "lymph-intro",
+  "moduleId": "lymph",
+  "title": "Лимфотропная терапия",
+  "order": 1,
+  "keywords": [],
+  "relatedLessonIds": [],
+  "alsoInModules": [],
+  "migratedFrom": {
+    "prototypeCommit": "1bdedd4630433560cec01c17d287649d455775e2",
+    "route": "#module/lymph"
+  },
+  "variants": {
+    "doctors": {
+      "version": "0.1.0",
+      "editorialStatus": "draft",
+      "contentKind": "summary",
+      "coverage": [
+        "safety"
+      ],
+      "body": "doctors.md",
+      "updatedAt": "2026-10-14",
+      "nextReviewAt": null,
+      "goal": "Регионарное введение, отбор пациента и требования к назначению.",
+      "takeaway": "Препарат, путь и область введения должны быть однозначно определены и проверены до процедуры.",
+      "scope": "Саммари СОП-09",
+      "program": [
+        "Определение в материалах ЛМБ",
+        "Клиническое обоснование",
+        "Допуск по исходному СОП",
+        "Письменное назначение",
+        "Подготовка и выполнение",
+        "Наблюдение",
+        "Оценка результата",
+        "Что дополнить в клиническом модуле"
+      ],
+      "sources": [
+        {
+          "id": "lmb-sop-09",
+          "locator": null,
+          "supports": "Непрямое регионарное введение, назначение, допуск, выполнение и наблюдение. Версия 1.0."
+        }
+      ],
+      "claims": [],
+      "approval": null
+    },
+    "admins": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "program": [],
+      "sources": [],
+      "claims": [],
+      "derivedFrom": null,
+      "approval": null
+    }
+  }
+}

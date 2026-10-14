@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LMB Академия — витрина</title>
+<style>
+  :root { --paper:#eceae3; --ink:#202e29; --muted:#5d6960; --green:#293e36; --line:#d3d6cc; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 Arial, Helvetica, sans-serif; }
+  header { padding: 22px 28px 12px; }
+  h1 { font: normal 28px Georgia, serif; margin: 0 0 4px; }
+  header p { margin: 0; color: var(--muted); max-width: 900px; }
+  .pages { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 28px 18px; }
+  .pages button { border: 1px solid var(--line); background: #fff; border-radius: 30px; padding: 7px 14px; font: inherit; cursor: pointer; }
+  .pages button[aria-pressed="true"] { background: var(--green); color: #fff; border-color: var(--green); }
+  .stage { display: flex; gap: 26px; align-items: flex-start; padding: 0 28px 40px; flex-wrap: wrap; }
+  figure { margin: 0; }
+  figcaption { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .device { background: #fff; border: 10px solid #1f2522; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px #0002; position: relative; }
+  .device.phone { border-radius: 26px; border-width: 12px; }
+  .device iframe { border: 0; transform-origin: 0 0; display: block; }
+</style>
+</head>
+<body>
+<header>
+  <h1>LMB Академия: как выглядит сайт</h1>
+  <p>Живой предпросмотр (папка <code>preview/</code>) в трёх размерах экрана. Сайт внутри рамок работает: можно нажимать ссылки, искать и прокручивать. Пометка «Предпросмотр» и «Черновик» видна только в этом режиме; в рабочей сборке черновиков нет.</p>
+</header>
+<div class="pages" role="group" aria-label="Страница">
+  <button data-hash="" aria-pressed="true">Каталог</button>
+  <button data-hash="#lesson/infusion-intro">Саммари (черновик)</button>
+  <button data-hash="#module/ozone">Направление с несколькими темами</button>
+  <button data-hash="#lesson/hms-osipov-intro">Программа раздела</button>
+  <button data-hash="#lesson/ozone-rectal">«Материал готовится»</button>
+  <button data-hash="#admins">Для администраторов</button>
+</div>
+<div class="stage">
+  <figure><figcaption>Компьютер · 1440 px (уменьшено)</figcaption><div class="device" data-w="1440" data-h="900" data-scale="0.5"><iframe title="Компьютер"></iframe></div></figure>
+  <figure><figcaption>Планшет · 768 px (уменьшено)</figcaption><div class="device" data-w="768" data-h="1024" data-scale="0.44"><iframe title="Планшет"></iframe></div></figure>
+  <figure><figcaption>Телефон · 390 px</figcaption><div class="device phone" data-w="390" data-h="844" data-scale="0.75"><iframe title="Телефон"></iframe></div></figure>
+</div>
+<script>
+  const base = '../preview/index.html';
+  const devices = [...document.querySelectorAll('.device')];
+  devices.forEach(d => {
+    const w = +d.dataset.w, h = +d.dataset.h, s = +d.dataset.scale, f = d.querySelector('iframe');
+    f.width = w; f.height = h; f.style.transform = `scale(${s})`;
+    d.style.width = (w * s + 20) + 'px'; d.style.height = (h * s + 20) + 'px';
+    f.src = base;
+  });
+  document.querySelectorAll('[data-hash]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-hash]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    devices.forEach(d => { d.querySelector('iframe').src = base + '?v=' + Date.now() + b.dataset.hash; });
+  }));
+</script>
+</body>
+</html>

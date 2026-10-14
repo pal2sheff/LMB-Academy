@@ -1,0 +1,22 @@
+{
+  "_comment": "Образец для private/source-register.json. Реестр хранится только в private/ и не публикуется. Значения ниже — пример формата, не реальные данные.",
+  "sources": [
+    {
+      "id": "lmb-sop-12",
+      "publicSourceId": "lmb-sop-12",
+      "originalName": "СОП-12_Назначение_и_сопровождение_инфузионной_терапии_Love_my_body.docx",
+      "localPath": "private/originals/infusion/sop-12.docx",
+      "author": null,
+      "date": null,
+      "edition": "1.0",
+      "sha256": null,
+      "role": "СОП: организация и безопасность",
+      "moduleIds": ["infusion"],
+      "dependentLessons": ["infusion-intro"],
+      "received": false,
+      "extraction": {"method": null, "path": null, "unclearFragments": []},
+      "personalDataChecked": false,
+      "approvalState": "не подтверждено"
+    }
+  ]
+}

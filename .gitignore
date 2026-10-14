@@ -1,0 +1,11 @@
+private/
+preview/
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+CLAUDE.local.md
+dist/
+__pycache__/

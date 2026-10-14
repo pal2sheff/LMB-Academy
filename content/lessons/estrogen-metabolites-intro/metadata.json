@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "lessonId": "estrogen-metabolites-intro",
+  "moduleId": "estrogen-metabolites",
+  "title": "Метаболиты эстрогенов в моче",
+  "order": 1,
+  "keywords": [],
+  "relatedLessonIds": [],
+  "alsoInModules": [],
+  "migratedFrom": {
+    "prototypeCommit": "1bdedd4630433560cec01c17d287649d455775e2",
+    "route": "#module/estrogen-metabolites"
+  },
+  "variants": {
+    "doctors": {
+      "version": "0.1.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": "doctors.md",
+      "updatedAt": "2026-10-14",
+      "nextReviewAt": null,
+      "goal": "Подготовка к анализу, чтение показателей и клиническая интерпретация метаболического профиля.",
+      "takeaway": "Нужна методическая инструкция лаборатории с составом панели, единицами и референсами.",
+      "scope": "Структура будущего саммари",
+      "program": [
+        "Задача раздела",
+        "Подготовка и биоматериал",
+        "Показатели и соотношения",
+        "Алгоритм интерпретации",
+        "Материалы для наполнения"
+      ],
+      "sources": [],
+      "claims": [],
+      "approval": null
+    },
+    "admins": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "program": [],
+      "sources": [],
+      "claims": [],
+      "derivedFrom": null,
+      "approval": null
+    }
+  }
+}

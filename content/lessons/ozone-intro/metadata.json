@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "lessonId": "ozone-intro",
+  "moduleId": "ozone",
+  "title": "Озонотерапия",
+  "order": 1,
+  "keywords": [],
+  "relatedLessonIds": [],
+  "alsoInModules": [],
+  "migratedFrom": {
+    "prototypeCommit": "1bdedd4630433560cec01c17d287649d455775e2",
+    "route": "#module/ozone"
+  },
+  "variants": {
+    "doctors": {
+      "version": "0.1.0",
+      "editorialStatus": "draft",
+      "contentKind": "summary",
+      "coverage": [
+        "safety"
+      ],
+      "body": "doctors.md",
+      "updatedAt": "2026-10-14",
+      "nextReviewAt": null,
+      "goal": "Внутривенный метод, БАГОТ, ректальные и вагинальные инсуффляции.",
+      "takeaway": "У каждого метода должны быть отдельные назначение, параметры, инструкция и план наблюдения.",
+      "scope": "Частичное саммари СОП-10",
+      "program": [
+        "Состав направления",
+        "Внутривенный озонированный раствор",
+        "БАГОТ",
+        "Ректальные инсуффляции",
+        "Вагинальные инсуффляции",
+        "Ключевая безопасность",
+        "Мониторинг и запись",
+        "Что дополнить"
+      ],
+      "sources": [
+        {
+          "id": "lmb-sop-10",
+          "locator": null,
+          "supports": "Внутривенный озонированный раствор и БАГОТ. Версия 1.0. Инсуффляции не входят в область применения этого документа."
+        }
+      ],
+      "claims": [],
+      "approval": null
+    },
+    "admins": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "program": [],
+      "sources": [],
+      "claims": [],
+      "derivedFrom": null,
+      "approval": null
+    }
+  }
+}

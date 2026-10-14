@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "lessonId": "infusion-intro",
+  "moduleId": "infusion",
+  "title": "Инфузионная терапия",
+  "order": 1,
+  "keywords": [],
+  "relatedLessonIds": [],
+  "alsoInModules": [],
+  "migratedFrom": {
+    "prototypeCommit": "1bdedd4630433560cec01c17d287649d455775e2",
+    "route": "#module/infusion"
+  },
+  "variants": {
+    "doctors": {
+      "version": "0.1.0",
+      "editorialStatus": "draft",
+      "contentKind": "summary",
+      "coverage": [
+        "safety"
+      ],
+      "body": "doctors.md",
+      "updatedAt": "2026-10-14",
+      "nextReviewAt": null,
+      "goal": "Обоснование назначения, совместимость, мониторинг и оценка результата.",
+      "takeaway": "Каждое назначение должно иметь клиническую цель, полный состав и план наблюдения.",
+      "scope": "Саммари СОП-12",
+      "program": [
+        "Место в лечении",
+        "Оценка перед назначением",
+        "Полнота назначения",
+        "Совместимость и качество",
+        "Мониторинг",
+        "Когда прекращать введение",
+        "Результат и документация",
+        "Главные ошибки"
+      ],
+      "sources": [
+        {
+          "id": "lmb-sop-12",
+          "locator": null,
+          "supports": "Врачебное назначение, допуск, совместимость, мониторинг и завершение терапии. Версия 1.0."
+        },
+        {
+          "id": "who-medication-safety",
+          "locator": null,
+          "supports": null
+        }
+      ],
+      "claims": [],
+      "approval": null
+    },
+    "admins": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "program": [],
+      "sources": [],
+      "claims": [],
+      "derivedFrom": null,
+      "approval": null
+    }
+  }
+}

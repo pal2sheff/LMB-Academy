@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "lessonId": "hormone-intro",
+  "moduleId": "hormone",
+  "title": "Гормональная терапия",
+  "order": 1,
+  "keywords": [],
+  "relatedLessonIds": [],
+  "alsoInModules": [],
+  "migratedFrom": {
+    "prototypeCommit": "1bdedd4630433560cec01c17d287649d455775e2",
+    "route": "#module/hormone"
+  },
+  "variants": {
+    "doctors": {
+      "version": "0.1.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": "doctors.md",
+      "updatedAt": "2026-10-14",
+      "nextReviewAt": null,
+      "goal": "Диагностика гормональных нарушений, выбор терапии и контроль безопасности.",
+      "takeaway": "Для наполнения требуется основной учебный курс и перечень применяемых в ЛМБ препаратов.",
+      "scope": "Структура будущего саммари",
+      "program": [
+        "Задача раздела",
+        "Физиология и диагностика",
+        "Выбор терапии",
+        "Наблюдение",
+        "Связь с другими направлениями",
+        "Какие материалы нужны"
+      ],
+      "sources": [
+        {
+          "id": "lmb-mk-mito-program",
+          "locator": null,
+          "supports": "Есть программа гормонально-пептидного блока. Для клинического саммари требуется основной учебный материал."
+        }
+      ],
+      "claims": [],
+      "approval": null
+    },
+    "admins": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "program": [],
+      "sources": [],
+      "claims": [],
+      "derivedFrom": null,
+      "approval": null
+    }
+  }
+}

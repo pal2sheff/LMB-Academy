@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "lessonId": "ozone-vaginal",
+  "moduleId": "ozone",
+  "title": "Вагинальные инсуффляции",
+  "order": 5,
+  "keywords": [],
+  "relatedLessonIds": [
+    "ozone-intro"
+  ],
+  "alsoInModules": [],
+  "variants": {
+    "doctors": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "program": [
+        "Гинекологическая оценка",
+        "Показания и ограничения",
+        "Методика",
+        "Переносимость",
+        "Контроль результата"
+      ],
+      "sources": [],
+      "claims": [],
+      "approval": null,
+      "programNote": "Нужны профильные материалы клиники; параметры других методов не переносятся."
+    },
+    "admins": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "program": [],
+      "sources": [],
+      "claims": [],
+      "derivedFrom": null,
+      "approval": null
+    }
+  }
+}

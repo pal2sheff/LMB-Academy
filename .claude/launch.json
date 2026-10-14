@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "lmb-preview",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-I", "scripts/lmb.py", "serve", "preview", "--port", "8000"],
+      "port": 8000
+    },
+    {
+      "name": "lmb-dist",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-I", "scripts/lmb.py", "serve", "dist", "--port", "8001"],
+      "port": 8001
+    }
+  ]
+}

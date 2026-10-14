@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "lessonId": "ozone-iv-solution",
+  "moduleId": "ozone",
+  "title": "Внутривенный озонированный раствор",
+  "order": 2,
+  "keywords": [],
+  "relatedLessonIds": [
+    "ozone-intro"
+  ],
+  "alsoInModules": [],
+  "variants": {
+    "doctors": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "program": [],
+      "sources": [],
+      "claims": [],
+      "approval": null,
+      "programNote": "Сейчас метод описан во вводной теме по СОП-10."
+    },
+    "admins": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "program": [],
+      "sources": [],
+      "claims": [],
+      "derivedFrom": null,
+      "approval": null
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "lessonId": "genetics-intro",
+  "moduleId": "genetics",
+  "title": "Основы генетики и генетического анализа",
+  "order": 1,
+  "keywords": [],
+  "relatedLessonIds": [],
+  "alsoInModules": [],
+  "migratedFrom": {
+    "prototypeCommit": "1bdedd4630433560cec01c17d287649d455775e2",
+    "route": "#module/genetics"
+  },
+  "variants": {
+    "doctors": {
+      "version": "0.1.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": "doctors.md",
+      "updatedAt": "2026-10-14",
+      "nextReviewAt": null,
+      "goal": "От генетического варианта к клинической интерпретации и персональным рекомендациям.",
+      "takeaway": "Нужны учебные материалы по генетике и методические инструкции к используемым панелям.",
+      "scope": "Структура будущего саммари",
+      "program": [
+        "Задача раздела",
+        "Базовые понятия",
+        "Методы и чтение отчёта",
+        "Клиническая интерпретация",
+        "Направления применения в ЛМБ",
+        "Материалы для наполнения"
+      ],
+      "sources": [],
+      "claims": [],
+      "approval": null
+    },
+    "admins": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "program": [],
+      "sources": [],
+      "claims": [],
+      "derivedFrom": null,
+      "approval": null
+    }
+  }
+}

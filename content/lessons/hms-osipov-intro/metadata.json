@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "lessonId": "hms-osipov-intro",
+  "moduleId": "hms-osipov",
+  "title": "Интерпретация ХМС по Осипову",
+  "order": 1,
+  "keywords": [],
+  "relatedLessonIds": [],
+  "alsoInModules": [],
+  "migratedFrom": {
+    "prototypeCommit": "1bdedd4630433560cec01c17d287649d455775e2",
+    "route": "#module/hms-osipov"
+  },
+  "variants": {
+    "doctors": {
+      "version": "0.1.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": "doctors.md",
+      "updatedAt": "2026-10-14",
+      "nextReviewAt": null,
+      "goal": "Метод, структура лабораторного отчёта и последовательный разбор результатов.",
+      "takeaway": "Нужны руководство по интерпретации и бланк применяемой панели ХМС.",
+      "scope": "Структура будущего саммари",
+      "program": [
+        "Задача раздела",
+        "Основы метода",
+        "Структура отчёта",
+        "Клинический разбор",
+        "Динамика и типичные ошибки",
+        "Материалы для наполнения"
+      ],
+      "sources": [],
+      "claims": [],
+      "approval": null
+    },
+    "admins": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "program": [],
+      "sources": [],
+      "claims": [],
+      "derivedFrom": null,
+      "approval": null
+    }
+  }
+}
