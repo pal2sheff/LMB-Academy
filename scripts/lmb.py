@@ -583,6 +583,26 @@ def read_data(out):
     return json.loads(txt[len("window.LMB_DATA = "):].rstrip().rstrip(";"))
 
 
+def cmd_bundle(project, args):
+    """Однофайловая страница из готовой сборки (для закрытого просмотра на других устройствах).
+    Результат — фрагмент без <!doctype>/<html>/<head>/<body>, все ресурсы встроены."""
+    src = project.root / args.target
+    if not (src / "data.js").exists():
+        print(f"Нет сборки в {src}"); return 1
+    page = (src / "index.html").read_text(encoding="utf-8")
+    css = (src / "styles.css").read_text(encoding="utf-8")
+    data = (src / "data.js").read_text(encoding="utf-8").replace("</", "<\\/")
+    app = (src / "app.js").read_text(encoding="utf-8").replace("</script", "<\\/script")
+    body = page[page.index("<body>") + len("<body>"): page.index("</body>")]
+    title = re.search(r"<title>(.*?)</title>", page).group(1).split(" — ")[0]
+    out = (f"<title>{title}</title>\n<meta name=\"robots\" content=\"noindex, nofollow\">\n<style>\n:root{{color-scheme:light}}\n{css}</style>\n"
+           f"{body.strip()}\n<script>window.LMB_EMBEDDED = true;\n{data}</script>\n<script>\n{app}</script>\n")
+    dest = project.root / "bundle" / f"lmb-academy-{args.target}.html"
+    write_text(dest, out)
+    print(f"Готово: {dest} ({len(out.encode('utf-8')) // 1024} КБ)")
+    return 0
+
+
 def cmd_serve(project, args):
     import functools
     import http.server
@@ -670,6 +690,7 @@ def main(argv=None):
     p = sub.add_parser("build"); p.add_argument("-v", "--verbose", action="store_true")
     p = sub.add_parser("preview"); p.add_argument("-v", "--verbose", action="store_true")
     p = sub.add_parser("serve"); p.add_argument("target", choices=["preview", "dist"]); p.add_argument("--port", type=int, default=8000)
+    p = sub.add_parser("bundle"); p.add_argument("target", choices=["preview", "dist"])
     p = sub.add_parser("checksum"); p.add_argument("lesson"); p.add_argument("variant", choices=VARIANT_IDS)
     p = sub.add_parser("approve"); p.add_argument("lesson"); p.add_argument("variant", choices=VARIANT_IDS)
     p.add_argument("--reviewer", required=True); p.add_argument("--date"); p.add_argument("--note")
@@ -681,6 +702,7 @@ def main(argv=None):
     if args.cmd == "build": return cmd_build(project, args, "production")
     if args.cmd == "preview": return cmd_build(project, args, "preview")
     if args.cmd == "serve": return cmd_serve(project, args)
+    if args.cmd == "bundle": return cmd_bundle(project, args)
     if args.cmd == "checksum": return cmd_checksum(project, args)
     if args.cmd == "approve": return cmd_approve(project, args)
     if args.cmd == "new-lesson": return cmd_new_lesson(project, args)

@@ -9,3 +9,4 @@ node_modules/
 CLAUDE.local.md
 dist/
 __pycache__/
+bundle/

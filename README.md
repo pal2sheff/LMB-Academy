@@ -21,6 +21,7 @@
 | Предпросмотр с черновиками | `python scripts/lmb.py preview`, затем `python scripts/lmb.py serve preview` → http://127.0.0.1:8000 |
 | Рабочая сборка | `python scripts/lmb.py build` → папка `dist/` |
 | Посмотреть рабочую сборку | `python scripts/lmb.py serve dist --port 8001` |
+| Однофайловая версия для закрытого просмотра | `python scripts/lmb.py bundle preview` → `bundle/lmb-academy-preview.html` |
 | Новая тема | `python scripts/lmb.py new-lesson infusion infusion-vitamins --title "Витаминные инфузии"` |
 | Контрольная сумма варианта | `python scripts/lmb.py checksum infusion-intro doctors` |
 | Записать утверждение | `python scripts/lmb.py approve infusion-intro doctors --reviewer "ФИО" --date 2026-10-20` |

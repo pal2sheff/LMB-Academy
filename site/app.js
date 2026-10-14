@@ -276,7 +276,7 @@
       ${related.length ? `<section class="related"><h2>Связанные темы</h2><ul>${related.map(r => `<li><a href="${href(variant, 'lesson/' + r.id)}">${esc(r.title)}</a></li>`).join('')}</ul></section>` : ''}
       ${otherNote ? `<div class="other-variant">${otherNote}</div>` : ''}
       <div class="mobile-read">${action}</div>${neighbours}</div>
-      <aside class="toc" aria-label="Содержание темы"><div class="toc-title">В ЭТОЙ ТЕМЕ</div>${(v.toc || []).map(t => `<a href="${href(variant, 'lesson/' + l.id + '/' + t.id)}" data-section="${t.id}">${esc(t.title)}</a>`).join('')}${action ? `<div class="toc-action">${action}</div>` : ''}<button type="button" class="print-button" data-print>Распечатать</button></aside></div></article>`;
+      <aside class="toc" aria-label="Содержание темы"><div class="toc-title">В ЭТОЙ ТЕМЕ</div>${(v.toc || []).map(t => `<a href="${href(variant, 'lesson/' + l.id + '/' + t.id)}" data-section="${t.id}">${esc(t.title)}</a>`).join('')}${action ? `<div class="toc-action">${action}</div>` : ''}${window.LMB_EMBEDDED ? '' : '<button type="button" class="print-button" data-print>Распечатать</button>'}</aside></div></article>`;
     focusTop(anchor);
   }
   function focusTop(anchor) {
