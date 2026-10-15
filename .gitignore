@@ -10,3 +10,4 @@ CLAUDE.local.md
 dist/
 __pycache__/
 bundle/
+demo/

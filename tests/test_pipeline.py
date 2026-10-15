@@ -245,6 +245,111 @@ class Variants(Base):
         self.assertTrue(adm["needsSync"])
 
 
+FIXTURE = ROOT / "tests" / "fixtures" / "demo-lesson"
+DEMO = "template-demo-intro"
+
+
+class Package(Base):
+    """Учебный пакет: введение, выжимка, инфографика, рисунки, видео, тест (нейтральная фикстура)."""
+
+    def add_fixture(self):
+        p = self.tmp / "content" / "modules.json"
+        mods = json.loads(p.read_text(encoding="utf-8"))
+        module = json.loads((FIXTURE / "module.json").read_text(encoding="utf-8"))
+        module["n"] = f"{max(int(m['n']) for m in mods) + 1:02d}"
+        module["displayOrder"] = max(m["displayOrder"] for m in mods if m["category"] == module["category"]) + 1
+        lmb.write_json(p, mods + [module])
+        shutil.copytree(FIXTURE / "lesson", self.tmp / "content" / "lessons" / DEMO)
+        shutil.copytree(FIXTURE / "media", self.tmp / "content" / "media" / DEMO)
+
+    def files(self, out):
+        return sorted(str(p.relative_to(out)).replace("\\", "/") for p in Path(out).rglob("*") if p.is_file())
+
+    def test_preview_contains_all_blocks_and_only_referenced_media(self):
+        self.add_fixture()
+        (self.tmp / "content" / "media" / DEMO / "unused.png").write_bytes(b"\x89PNG\r\n\x1a\n")
+        report, out = self.build("preview")
+        self.assertEqual(report.errors, [])
+        v = lmb.read_data(out)["lessons"][DEMO]["variants"]["doctors"]
+        self.assertIn("введение", v["introHtml"])
+        self.assertIn("Блоки показываются", v["briefHtml"])
+        self.assertEqual(v["infographic"]["src"], f"media/{DEMO}/main-scheme.svg")
+        self.assertIn('class="figure"', v["html"])
+        self.assertEqual(v["media"][0]["youtubeId"], "jNQXAC9IVRw")
+        self.assertIsNone(v["media"][1]["youtubeId"])
+        self.assertEqual(len(v["quiz"]["questions"]), 5)
+        self.assertIn(f"media/{DEMO}/main-scheme.svg", self.files(out))
+        self.assertIn(f"media/{DEMO}/side-figure.svg", self.files(out))
+        self.assertNotIn(f"media/{DEMO}/unused.png", self.files(out))
+        self.assertNotIn("introHtml", lmb.read_data(out)["lessons"][DEMO]["variants"]["admins"])
+
+    def test_draft_package_not_in_production(self):
+        self.add_fixture()
+        _, out = self.build("production")
+        self.assertEqual(self.files(out), ["app.js", "data.js", "index.html", "styles.css"])
+        self.assertNotIn("Сколько вопросов содержит тест", self.dist_text(out))
+
+    def test_approved_package_published_with_media_only(self):
+        self.add_fixture()
+        self.edit_meta(DEMO, lambda m: m["variants"]["doctors"].update(sources=[{"id": "lmb-sop-12", "locator": "фикстура", "supports": "фикстура"}]))
+        self.approve(DEMO)
+        (self.tmp / "private" / "inbox" / "canary.txt").write_text("PRIVATE-CANARY-91", encoding="utf-8")
+        report, out = self.build("production")
+        self.assertEqual(report.errors, [])
+        self.assertEqual(self.files(out), ["app.js", "data.js", "index.html", f"media/{DEMO}/main-scheme.svg",
+                                           f"media/{DEMO}/side-figure.svg", "styles.css"])
+        self.assertNotIn("PRIVATE-CANARY-91", self.dist_text(out))
+        v = lmb.read_data(out)["lessons"][DEMO]["variants"]["doctors"]
+        self.assertEqual((v["state"], len(v["quiz"]["questions"])), ("approved", 5))
+
+    def test_package_changes_invalidate_approval(self):
+        self.add_fixture()
+        self.approve(DEMO)
+        lesson = self.tmp / "content" / "lessons" / DEMO
+        for path, old, new in [(lesson / "doctors.quiz.json", "Три", "Четыре"),
+                               (lesson / "doctors.intro.md", "технический", "тестовый"),
+                               (self.tmp / "content" / "media" / DEMO / "side-figure.svg", "Блок А", "Блок Я")]:
+            raw = path.read_bytes()
+            path.write_bytes(raw.replace(old.encode("utf-8"), new.encode("utf-8"), 1))
+            self.assertTrue(any("контрольная сумма" in e for e in lmb.check_project(self.project()).errors), path.name)
+            path.write_bytes(raw)
+            self.assertEqual(lmb.check_project(self.project()).errors, [], path.name)
+
+    def test_lessons_without_package_keep_checksum(self):
+        p = lmb.Project(ROOT)
+        meta = p.lessons["infusion-intro"]
+        self.assertEqual(p.checksum("infusion-intro", "doctors"), lmb.compute_checksum(meta, "doctors", p.body("infusion-intro", "doctors")))
+
+    def test_quiz_validation(self):
+        self.add_fixture()
+        qp = self.tmp / "content" / "lessons" / DEMO / "doctors.quiz.json"
+        quiz = json.loads(qp.read_text(encoding="utf-8"))
+        lmb.write_json(qp, {**quiz, "questions": quiz["questions"][:4]})
+        self.assertTrue(any("5 вопросов" in e for e in lmb.check_project(self.project()).errors))
+        quiz["questions"][0]["answer"] = 7
+        lmb.write_json(qp, quiz)
+        self.assertTrue(any("answer" in e for e in lmb.check_project(self.project()).errors))
+
+    def test_media_and_image_validation(self):
+        self.add_fixture()
+        bad_urls = ["http://www.youtube.com/watch?v=jNQXAC9IVRw", "https://disk.example.com/file?token=abc", "https://user:pw@example.com/"]
+        for url in bad_urls:
+            self.edit_meta(DEMO, lambda m: m["variants"]["doctors"].update(media=[{"title": "x", "url": url}]))
+            self.assertTrue(any("media" in e for e in lmb.check_project(self.project()).errors), url)
+        self.edit_meta(DEMO, lambda m: m["variants"]["doctors"].update(media=[]))
+        svg = self.tmp / "content" / "media" / DEMO / "side-figure.svg"
+        svg.write_text('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>', encoding="utf-8")
+        self.assertTrue(any("SVG" in e for e in lmb.check_project(self.project()).errors))
+        shutil.copyfile(FIXTURE / "media" / "side-figure.svg", svg)
+        md = self.tmp / "content" / "lessons" / DEMO / "doctors.md"
+        md.write_text(md.read_text(encoding="utf-8").replace("![Пример дополнительного рисунка: три блока в ряд]", "![]"), encoding="utf-8")
+        self.assertTrue(any("нет текстового описания" in e for e in lmb.check_project(self.project()).errors))
+        md.write_text("## Раздел\n\nТекст ![рисунок](side-figure.svg) внутри абзаца.\n", encoding="utf-8")
+        self.assertTrue(any("отдельной строкой" in e for e in lmb.check_project(self.project()).errors))
+        self.edit_meta(DEMO, lambda m: m["variants"]["doctors"].update(infographic={"src": "../../private/x.png", "alt": "x"}))
+        self.assertTrue(any("имя файла" in e for e in lmb.check_project(self.project()).errors))
+
+
 class Validation(Base):
     def test_a10_unknown_source_detected(self):
         self.edit_meta("mito-intro", lambda m: m["variants"]["doctors"]["sources"].append({"id": "no-such-source"}))

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 200" width="640" height="200" font-family="Arial, sans-serif">
+  <rect width="640" height="200" fill="#ffffff"/>
+  <g fill="#ffffff" stroke="#2b4a3c" stroke-width="2">
+    <rect x="20" y="50" width="170" height="100" rx="6"/>
+    <rect x="235" y="50" width="170" height="100" rx="6"/>
+    <rect x="450" y="50" width="170" height="100" rx="6"/>
+  </g>
+  <g fill="#1f2924" font-size="20" text-anchor="middle">
+    <text x="105" y="107">Блок А</text>
+    <text x="320" y="107">Блок Б</text>
+    <text x="535" y="107">Блок В</text>
+  </g>
+  <g stroke="#8a3f45" stroke-width="2.5" fill="none" stroke-linecap="round">
+    <path d="M196 100h32M220 92l8 8-8 8"/>
+    <path d="M411 100h32M435 92l8 8-8 8"/>
+  </g>
+</svg>

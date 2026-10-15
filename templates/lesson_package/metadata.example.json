@@ -1,0 +1,16 @@
+{
+  "_comment": "Фрагмент variants.doctors: добавьте нужные поля к существующим. Незаполненные поля не указывайте.",
+  "intro": "doctors.intro.md",
+  "brief": "doctors.brief.md",
+  "infographic": {
+    "src": "main.png",
+    "alt": "Короткое описание изображения",
+    "caption": "Подпись под инфографикой",
+    "description": "Развёрнутое текстовое описание того, что показано на схеме."
+  },
+  "media": [
+    {"title": "Название видео", "url": "https://www.youtube.com/watch?v=XXXXXXXXXXX", "note": "Что посмотреть", "duration": "12:30"},
+    {"title": "Материалы на диске", "url": "https://drive.google.com/…", "note": "Открывается по правам доступа владельца"}
+  ],
+  "quiz": "doctors.quiz.json"
+}

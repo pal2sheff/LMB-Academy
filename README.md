@@ -21,6 +21,7 @@
 | Предпросмотр с черновиками | `python scripts/lmb.py preview`, затем `python scripts/lmb.py serve preview` → http://127.0.0.1:8000 |
 | Рабочая сборка | `python scripts/lmb.py build` → папка `dist/` |
 | Посмотреть рабочую сборку | `python scripts/lmb.py serve dist --port 8001` |
+| Демонстрация учебного пакета (локально, не публикуется) | `python scripts/lmb.py demo`, затем `python scripts/lmb.py serve demo` |
 | Однофайловая версия для закрытого просмотра | `python scripts/lmb.py bundle preview` → `bundle/lmb-academy-preview.html` |
 | Новая тема | `python scripts/lmb.py new-lesson infusion infusion-vitamins --title "Витаминные инфузии"` |
 | Контрольная сумма варианта | `python scripts/lmb.py checksum infusion-intro doctors` |
@@ -51,7 +52,7 @@ private/                             исходники и рабочие фай
 preview/, dist/                      результаты сборки; не хранятся в Git
 ```
 
-Сборка копирует в `dist/` ровно четыре файла: `index.html`, `app.js`, `styles.css`, `data.js`. Любой лишний файл считается ошибкой. Сайт открывается и с локального сервера, и двойным щелчком по `dist/index.html`.
+Сборка копирует в `dist/` четыре файла (`index.html`, `app.js`, `styles.css`, `data.js`) и папку `media/` только с теми учебными иллюстрациями из `content/media/`, на которые ссылается публикуемая версия. Любой другой файл считается ошибкой. Учебный пакет темы описан в `templates/lesson_package/README.md`. Сайт открывается и с локального сервера, и двойным щелчком по `dist/index.html`.
 
 ### Что попадает в рабочую сборку
 

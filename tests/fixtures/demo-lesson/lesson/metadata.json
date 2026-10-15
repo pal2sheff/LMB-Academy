@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "lessonId": "template-demo-intro",
+  "moduleId": "template-demo",
+  "title": "Демонстрация шаблона",
+  "order": 1,
+  "keywords": ["шаблон"],
+  "relatedLessonIds": [],
+  "alsoInModules": [],
+  "variants": {
+    "doctors": {
+      "version": "0.1.0",
+      "editorialStatus": "draft",
+      "contentKind": "summary",
+      "coverage": [],
+      "body": "doctors.md",
+      "updatedAt": "2026-10-15",
+      "nextReviewAt": null,
+      "goal": "Технический пример всех блоков учебной темы.",
+      "takeaway": "Каждый блок появляется, только когда для него есть файл или запись в метаданных.",
+      "scope": "Техническая фикстура",
+      "subtitle": "Пример оформления",
+      "program": [],
+      "intro": "doctors.intro.md",
+      "brief": "doctors.brief.md",
+      "infographic": {
+        "src": "main-scheme.svg",
+        "alt": "Схема из трёх шагов: файлы пакета, проверка, страница сайта",
+        "caption": "Главная схема темы занимает ширину текстовой колонки и открывается крупно по нажатию.",
+        "description": "Слева — файлы пакета: текст, выжимка, изображения, ссылки и вопросы. В центре — проверка командой check. Справа — страница сайта с блоками в постоянном порядке."
+      },
+      "media": [
+        {"title": "Пример видео YouTube", "url": "https://www.youtube.com/watch?v=jNQXAC9IVRw", "note": "Нейтральное видео для проверки встраивания.", "duration": "0:19"},
+        {"title": "Пример внешней ссылки", "url": "https://www.example.com/", "note": "Облачные диски и другие сайты открываются обычной ссылкой."}
+      ],
+      "quiz": "doctors.quiz.json",
+      "sources": [],
+      "claims": [],
+      "approval": null
+    },
+    "admins": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "subtitle": null,
+      "program": [],
+      "sources": [],
+      "claims": [],
+      "derivedFrom": null,
+      "approval": null
+    }
+  }
+}

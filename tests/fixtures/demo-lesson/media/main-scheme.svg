@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" width="960" height="360" font-family="Arial, sans-serif">
+  <rect width="960" height="360" fill="#ffffff"/>
+  <text x="480" y="44" text-anchor="middle" font-size="26" font-weight="bold" fill="#1f2924">Пример главной схемы темы</text>
+  <g fill="#e8eee9" stroke="#2b4a3c" stroke-width="2">
+    <rect x="40" y="90" width="250" height="200" rx="8"/>
+    <rect x="355" y="90" width="250" height="200" rx="8"/>
+    <rect x="670" y="90" width="250" height="200" rx="8"/>
+  </g>
+  <g fill="#1f2924" font-size="22" text-anchor="middle">
+    <text x="165" y="135" font-weight="bold">Файлы пакета</text>
+    <text x="480" y="135" font-weight="bold">Проверка</text>
+    <text x="795" y="135" font-weight="bold">Страница сайта</text>
+  </g>
+  <g fill="#4c5751" font-size="18" text-anchor="middle">
+    <text x="165" y="175">текст, выжимка,</text><text x="165" y="200">изображения,</text><text x="165" y="225">ссылки, вопросы</text>
+    <text x="480" y="175">python scripts/lmb.py</text><text x="480" y="200">check</text><text x="480" y="225">и предпросмотр</text>
+    <text x="795" y="175">блоки в постоянном</text><text x="795" y="200">порядке, пустые</text><text x="795" y="225">скрыты</text>
+  </g>
+  <g stroke="#2b4a3c" stroke-width="3" fill="none" stroke-linecap="round">
+    <path d="M298 190h48M336 180l10 10-10 10"/>
+    <path d="M613 190h48M651 180l10 10-10 10"/>
+  </g>
+  <text x="480" y="330" text-anchor="middle" font-size="16" fill="#4c5751">Техническая фикстура. Не учебный материал.</text>
+</svg>

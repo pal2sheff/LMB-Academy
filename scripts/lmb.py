@@ -40,7 +40,7 @@ REQUIRED_EXTRA_MODULE_IDS = ["steroid-saliva"]
 GROUPS = [("diagnostics", "Диагностика"), ("interventions", "Вмешательства"), ("foundations", "Основы и клинические направления")]
 # Ключи встроенных иконок из site/app.js; неизвестный ключ показывается нейтральной иконкой документа.
 ICON_KEYS = {"mitochondrion", "dna", "saliva-tube", "urine-molecule", "chromatogram", "urine-cycle", "infusion-bag",
-             "peptide-chain", "hormone-receptor", "pellet-implant", "ozone-molecule", "lymph-vessel", "cell-clock", "male", "female"}
+             "peptide-chain", "hormone-receptor", "pellet-implant", "ozone-molecule", "lymph-vessel", "cell-clock", "male", "female", "doc"}
 PUBLIC_SOURCE_FIELDS ={"id", "title", "author", "year", "type", "url", "note"}
 SITE_FILES = ["index.html", "app.js", "styles.css"]
 ID_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
@@ -112,11 +112,76 @@ class Project:
         p = self.lesson_dir(lesson_id) / v["body"]
         return read_body(self.lesson_dir(lesson_id), v["body"]) if p.exists() else None
 
+    def extras(self, lesson_id, variant):
+        v = self.lessons[lesson_id]["variants"].get(variant) or {}
+        return collect_extras(self, lesson_id, v, self.body(lesson_id, variant))
+
+    def checksum(self, lesson_id, variant):
+        return compute_checksum(self.lessons[lesson_id], variant, self.body(lesson_id, variant), self.extras(lesson_id, variant))
+
+    def approval_problem(self, lesson_id, variant):
+        return approval_problem(self.lessons[lesson_id], variant, self.body(lesson_id, variant), self.extras(lesson_id, variant))
+
 
 # ---------------------------------------------------------------- контрольная сумма
 
 CHECKSUM_FIELDS = ["version", "contentKind", "coverage", "goal", "takeaway", "scope", "subtitle", "editorialSections",
                    "sources", "claims", "derivedFrom"]
+# Необязательные поля учебного пакета. В контрольную сумму входят, только если заполнены,
+# поэтому суммы прежних тем без этих полей не меняются.
+PACKAGE_FIELDS = ["intro", "brief", "infographic", "media", "quiz"]
+MEDIA_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"}
+FILE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+FIG_RE = re.compile(r'^!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)\s*$')
+QUIZ_QUESTIONS = 5
+SECRET_QUERY_RE = re.compile(r"(^|[?&])(token|access_token|key|api_key|apikey|password|pass|pwd|secret|sig|signature|auth)=", re.I)
+YOUTUBE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+
+
+def figure_names(md):
+    return [m.group(2) for m in (FIG_RE.match(line.strip()) for line in (md or "").split("\n")) if m]
+
+
+def file_sha256(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def media_dir(project, lid):
+    return project.content / "media" / lid
+
+
+def collect_extras(project, lid, v, body, r=None, where=""):
+    """Тексты и файлы учебного пакета варианта, входящие в контрольную сумму: введение, выжимка,
+    тест и хеши иллюстраций. Пустой словарь, если пакет не заполнен."""
+    d, ex = project.lesson_dir(lid), {}
+    for key in ("intro", "brief", "quiz"):
+        name = v.get(key)
+        if not name:
+            continue
+        if not FILE_NAME_RE.match(name):
+            if r: r.error(where, f"{key}: нужно имя файла в папке темы, а не путь: «{name}»")
+            continue
+        if not (d / name).exists():
+            if r: r.error(where, f"{key}: файл «{name}» не найден")
+            continue
+        if key == "quiz":
+            try:
+                ex["quiz"] = read_json(d / name)
+            except ValueError as e:
+                if r: r.error(where, f"quiz: файл «{name}» не является корректным JSON ({e})")
+        else:
+            ex[key] = read_body(d, name)
+    names = set(figure_names(body)) | set(figure_names(ex.get("intro"))) | set(figure_names(ex.get("brief")))
+    if isinstance(v.get("infographic"), dict) and v["infographic"].get("src"):
+        names.add(v["infographic"]["src"])
+    images = {}
+    for name in sorted(names):
+        p = media_dir(project, lid) / name
+        if FILE_NAME_RE.match(name) and p.suffix.lower() in MEDIA_EXT and p.exists():
+            images[name] = file_sha256(p)
+    if images:
+        ex["images"] = images
+    return ex
 
 
 def split_sections(md):
@@ -139,19 +204,24 @@ def learning_view(md, editorial):
     return "\n".join(text for title, text in split_sections(md) if title not in hidden).strip("\n") + "\n"
 
 
-def compute_checksum(lesson_meta, variant, body_text):
-    """SHA-256 текста Markdown и клинически значимых метаданных варианта."""
+def compute_checksum(lesson_meta, variant, body_text, extras=None):
+    """SHA-256 текста Markdown, клинически значимых метаданных варианта и учебного пакета
+    (введение, выжимка, тест, описания и хеши иллюстраций, видео и ссылки)."""
     v = lesson_meta["variants"][variant]
+    meta = {k: v.get(k) for k in CHECKSUM_FIELDS}
+    meta.update({k: v[k] for k in PACKAGE_FIELDS if v.get(k)})
     payload = {
         "lessonId": lesson_meta["lessonId"], "title": lesson_meta["title"], "variant": variant,
-        "meta": {k: v.get(k) for k in CHECKSUM_FIELDS},
+        "meta": meta,
         "body": (body_text or "").replace("\r\n", "\n"),
     }
+    if extras:
+        payload["extras"] = extras
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return "sha256:" + hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def approval_problem(lesson_meta, variant, body_text):
+def approval_problem(lesson_meta, variant, body_text, extras=None):
     """None, если запись утверждения действительна для текущего содержимого; иначе причина."""
     v = lesson_meta["variants"][variant]
     a = v.get("approval")
@@ -165,7 +235,7 @@ def approval_problem(lesson_meta, variant, body_text):
         return "в записи утверждения нет даты ГГГГ-ММ-ДД"
     if a.get("version") != v.get("version"):
         return f"утверждена версия {a.get('version')}, текущая {v.get('version')}"
-    if a.get("checksum") != compute_checksum(lesson_meta, variant, body_text):
+    if a.get("checksum") != compute_checksum(lesson_meta, variant, body_text, extras):
         return "содержимое изменено после утверждения (контрольная сумма не совпадает)"
     if TEST_REVIEWER_RE.search(a["reviewer"]) and os.environ.get("LMB_TEST_FIXTURES") != "1":
         return "рецензент из тестовой фикстуры недопустим в рабочем контенте"
@@ -183,8 +253,14 @@ def history_snapshots(project, lesson_id, variant):
         md_path = meta_path.with_suffix(".md")
         body = read_body(hdir, md_path.name) if md_path.exists() else ""
         lesson_like = {"lessonId": lesson_id, "title": snap["title"], "variants": {variant: snap["variant"]}}
-        valid = approval_problem(lesson_like, variant, body) is None
-        found.append({"version": snap["variant"]["version"], "meta": snap, "body": body, "valid": valid,
+        extras = snap.get("extras") or {}
+        valid = approval_problem(lesson_like, variant, body, extras) is None
+        # Изображения не хранятся в снимке: версия пригодна, только если файлы не изменились.
+        for name, sha in (extras.get("images") or {}).items():
+            p = media_dir(project, lesson_id) / name
+            if not p.exists() or file_sha256(p) != sha:
+                valid = False
+        found.append({"version": snap["variant"]["version"], "meta": snap, "body": body, "valid": valid, "extras": extras,
                       "checksum": snap["variant"]["approval"]["checksum"] if snap["variant"].get("approval") else None})
     found.sort(key=lambda s: tuple(int(x) for x in s["version"].split(".")), reverse=True)
     return found
@@ -221,9 +297,17 @@ def _inline_fmt(s):
     return s
 
 
-def render_markdown(md, link_check):
+def figure_html(url, alt, caption):
+    a = html.escape(alt)
+    cap = f"<figcaption>{html.escape(caption)}</figcaption>" if caption else ""
+    return (f'<figure class="figure"><button type="button" class="zoom" data-zoom="{html.escape(url)}" aria-label="Увеличить рисунок: {a}">'
+            f'<img src="{html.escape(url)}" alt="{a}" loading="lazy"></button>{cap}</figure>')
+
+
+def render_markdown(md, link_check, image_check=None):
     """Небольшое подмножество Markdown: ##/### заголовки, абзацы, списки, таблицы, цитаты,
-    **жирный**, *курсив*, `код`, [ссылки](url). HTML внутри текста экранируется."""
+    **жирный**, *курсив*, `код`, [ссылки](url) и рисунок отдельной строкой ![описание](файл "подпись").
+    HTML внутри текста экранируется."""
     lines = md.replace("\r\n", "\n").split("\n")
     out, toc, i, n = [], [], 0, len(lines)
     section_no = 0
@@ -254,6 +338,12 @@ def render_markdown(md, link_check):
                 out.append(f'</section><section class="text-section" id="{sid}"><h2>{render_inline(title, link_check)}</h2>')
             else:
                 out.append(f"<h{level}>{render_inline(title, link_check)}</h{level}>")
+            i += 1; continue
+        fig = FIG_RE.match(line.strip())
+        if fig:
+            if image_check is None:
+                raise MarkdownError(f"строка {i + 1}: рисунки в этом тексте не поддерживаются")
+            out.append(figure_html(image_check(fig.group(2), fig.group(1), fig.group(3)), fig.group(1), fig.group(3)))
             i += 1; continue
         if line.lstrip().startswith("|") and i + 1 < n and is_table_sep(lines[i + 1]):
             head = cells(line); i += 2
@@ -287,9 +377,13 @@ def render_markdown(md, link_check):
             continue
         buf = []
         while i < n and lines[i].strip() and not re.match(r"^(#{1,4}\s|>|\s*([-*]|\d+[.)])\s)", lines[i]) \
+                and not FIG_RE.match(lines[i].strip()) \
                 and not (lines[i].lstrip().startswith("|") and i + 1 < n and is_table_sep(lines[i + 1])):
             buf.append(lines[i].strip()); i += 1
-        out.append(f"<p>{render_inline(' '.join(buf), link_check)}</p>")
+        para = " ".join(buf)
+        if "![" in para:
+            raise MarkdownError(f"строка {i}: рисунок должен стоять отдельной строкой: ![описание](файл.png \"подпись\")")
+        out.append(f"<p>{render_inline(para, link_check)}</p>")
     body = "".join(out)
     if body.startswith("</section>"):
         body = body[len("</section>"):]
@@ -377,6 +471,119 @@ def make_link_check(project, where, r):
     return check
 
 
+def check_image_file(project, lid, name, where, r):
+    """Иллюстрация из публичной папки content/media/<тема>/: имя, тип, наличие, безопасный SVG."""
+    if not FILE_NAME_RE.match(name or ""):
+        r.error(where, f"иллюстрация: нужно имя файла из content/media/{lid}/, а не путь или адрес: «{name}»"); return False
+    p = media_dir(project, lid) / name
+    if p.suffix.lower() not in MEDIA_EXT:
+        r.error(where, f"иллюстрация «{name}»: допустимы {', '.join(sorted(MEDIA_EXT))}"); return False
+    if not p.exists():
+        r.error(where, f"иллюстрация «{name}» не найдена в content/media/{lid}/"); return False
+    if p.stat().st_size > 3 * 1024 * 1024:
+        r.warn(where, f"иллюстрация «{name}» больше 3 МБ; уменьшите размер для телефона")
+    if p.suffix.lower() == ".svg" and re.search(r"<script|<foreignObject|\son\w+\s*=|javascript:|<iframe|xlink:href\s*=\s*[\"']https?:",
+                                                p.read_text(encoding="utf-8", errors="replace"), re.I):
+        r.error(where, f"иллюстрация «{name}»: SVG содержит сценарии, внешние ссылки или встроенный HTML")
+        return False
+    return True
+
+
+def make_image_check(project, lid, where, r, used):
+    def check(name, alt, caption):
+        if not (alt or "").strip():
+            r.error(where, f"у рисунка «{name}» нет текстового описания: ![описание](файл)")
+        if check_image_file(project, lid, name, where, r):
+            used.add(name)
+        return f"media/{lid}/{name}"
+    return check
+
+
+def media_item(item, where, r):
+    """Видео или внешний материал: только https, без учётных данных; для YouTube — проверенный ID."""
+    from urllib.parse import urlparse, parse_qs
+    if not isinstance(item, dict) or not (item.get("title") or "").strip():
+        r.error(where, "media: у каждого элемента нужно название (title)"); return None
+    url = (item.get("url") or "").strip()
+    try:
+        u = urlparse(url)
+    except ValueError:
+        u = None
+    if not u or u.scheme != "https" or not u.hostname:
+        r.error(where, f"media «{item.get('title')}»: нужен адрес https://"); return None
+    if u.username or u.password or SECRET_QUERY_RE.search("?" + (u.query or "")):
+        r.error(where, f"media «{item.get('title')}»: в ссылке не должно быть паролей, токенов и ключей доступа"); return None
+    host = u.hostname.lower()
+    yid, start = None, None
+    q = parse_qs(u.query)
+    if host in ("youtube.com", "www.youtube.com", "m.youtube.com"):
+        if u.path == "/watch":
+            yid = (q.get("v") or [None])[0]
+        else:
+            m = re.match(r"^/(embed|shorts|live)/([^/?#]+)", u.path)
+            yid = m.group(2) if m else None
+    elif host == "youtu.be":
+        yid = u.path.lstrip("/").split("/")[0]
+    if yid is not None and not YOUTUBE_ID_RE.match(yid):
+        r.error(where, f"media «{item.get('title')}»: не удалось распознать видео YouTube"); yid = None
+    t = (q.get("t") or q.get("start") or [None])[0]
+    if yid and t:
+        m = re.match(r"^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$", t)
+        if m and any(m.groups()):
+            start = int(m.group(1) or 0) * 3600 + int(m.group(2) or 0) * 60 + int(m.group(3) or 0)
+    return {"title": item["title"].strip(), "url": url, "note": item.get("note"), "duration": item.get("duration"),
+            "youtubeId": yid, "start": start}
+
+
+def check_quiz(quiz, where, r):
+    if not isinstance(quiz, dict) or not str(quiz.get("version") or "").strip():
+        r.error(where, "quiz: нужна версия теста (version)"); return False
+    qs = quiz.get("questions")
+    if not isinstance(qs, list) or len(qs) != QUIZ_QUESTIONS:
+        r.error(where, f"quiz: тест должен содержать {QUIZ_QUESTIONS} вопросов"); return False
+    ok = True
+    for i, q in enumerate(qs, 1):
+        opts = q.get("options") if isinstance(q, dict) else None
+        if not isinstance(q, dict) or not str(q.get("question") or "").strip():
+            r.error(where, f"quiz: вопрос {i} без формулировки"); ok = False; continue
+        if not isinstance(opts, list) or not 2 <= len(opts) <= 6 or not all(isinstance(o, str) and o.strip() for o in opts):
+            r.error(where, f"quiz: вопрос {i} — нужно от 2 до 6 непустых вариантов"); ok = False; continue
+        if not isinstance(q.get("answer"), int) or isinstance(q.get("answer"), bool) or not 0 <= q["answer"] < len(opts):
+            r.error(where, f"quiz: вопрос {i} — answer должен быть номером варианта от 0 до {len(opts) - 1}"); ok = False
+        if not str(q.get("explanation") or "").strip():
+            r.error(where, f"quiz: вопрос {i} без пояснения (explanation)"); ok = False
+    return ok
+
+
+def check_package(project, lid, vname, v, body, extras, r, w):
+    """Необязательные блоки учебного пакета варианта."""
+    used = set()
+    for key in ("intro", "brief"):
+        if key in extras:
+            try:
+                render_markdown(extras[key], make_link_check(project, w, r), make_image_check(project, lid, w, r, used))
+            except MarkdownError as e:
+                r.error(w, f"{key}: {e}")
+    info = v.get("infographic")
+    if info is not None:
+        if not isinstance(info, dict) or not info.get("src"):
+            r.error(w, "infographic: нужен src — имя файла в content/media/<тема>/")
+        else:
+            check_image_file(project, lid, info["src"], w, r)
+            if not (info.get("alt") or "").strip():
+                r.error(w, "infographic: нужно короткое текстовое описание (alt)")
+            if not (info.get("description") or "").strip():
+                r.warn(w, "infographic: нет развёрнутого текстового описания (description)")
+    if v.get("media") is not None:
+        if not isinstance(v["media"], list):
+            r.error(w, "media: нужен список")
+        else:
+            for item in v["media"]:
+                media_item(item, w, r)
+    if "quiz" in extras:
+        check_quiz(extras["quiz"], w, r)
+
+
 def check_lesson(project, lid, meta, owner, r):
     where = f"lessons/{lid}"
     if meta.get("lessonId") != lid: r.error(where, "lessonId не совпадает с именем папки")
@@ -419,7 +626,7 @@ def check_lesson(project, lid, meta, owner, r):
             else:
                 body = read_body(project.lesson_dir(lid), name)
                 try:
-                    render_markdown(body, make_link_check(project, w, r))
+                    render_markdown(body, make_link_check(project, w, r), make_image_check(project, lid, w, r, set()))
                 except MarkdownError as e:
                     r.error(w, str(e))
                 titles = {t for t, _ in split_sections(body) if t}
@@ -428,8 +635,10 @@ def check_lesson(project, lid, meta, owner, r):
                         r.error(w, f"editorialSections: в тексте нет раздела «## {t}»")
         elif v.get("contentKind") == "summary":
             r.error(w, "у саммари нет файла текста (body)")
+        extras = collect_extras(project, lid, v, body, r, w)
+        check_package(project, lid, vname, v, body, extras, r, w)
         if v.get("editorialStatus") == "approved":
-            prob = approval_problem(meta, vname, body)
+            prob = approval_problem(meta, vname, body, extras)
             if prob: r.error(w, f"утверждение недействительно: {prob}. Производственная сборка остановлена")
         elif v.get("approval"):
             r.warn(w, "есть запись утверждения, но статус не approved")
@@ -459,7 +668,7 @@ def admin_sync_state(project, lid):
     if not d or not d.get("checksum") or not d.get("version"):
         return "missing"
     doc = meta["variants"].get("doctors") or {}
-    current = compute_checksum(meta, "doctors", project.body(lid, "doctors"))
+    current = project.checksum(lid, "doctors")
     if d.get("lessonId", lid) != lid or d["version"] != doc.get("version") or d["checksum"] != current:
         return "needs_sync"
     return "ok"
@@ -467,7 +676,7 @@ def admin_sync_state(project, lid):
 
 def doctors_version_was_approved(project, lid, derived):
     meta = project.lessons[lid]
-    if approval_problem(meta, "doctors", project.body(lid, "doctors")) is None:
+    if project.approval_problem(lid, "doctors") is None:
         a = meta["variants"]["doctors"]["approval"]
         if a["version"] == derived.get("version") and a["checksum"] == derived.get("checksum"):
             return True
@@ -491,28 +700,49 @@ def resolve_variant(project, lid, vname, mode, r):
     if v.get("editorialStatus") == "archived":
         return {"state": "withdrawn", "program": []}
     body = project.body(lid, vname)
-    approved_ok = body is not None and approval_problem(meta, vname, body) is None
+    extras = collect_extras(project, lid, v, body)
+    approved_ok = body is not None and approval_problem(meta, vname, body, extras) is None
     chosen, fallback_version = None, None
     if v.get("contentKind") == "outline" and body is not None:
-        chosen = ("outline", v, body)
+        chosen = ("outline", v, body, extras)
     elif v.get("contentKind") == "summary" and body is not None:
         if approved_ok:
-            chosen = ("approved", v, body)
+            chosen = ("approved", v, body, extras)
         elif mode == "preview":
-            chosen = ("draft", v, body)
+            chosen = ("draft", v, body, extras)
         else:
             for snap in history_snapshots(project, lid, vname):
                 if snap["valid"]:
-                    chosen = ("approved", snap["meta"]["variant"], snap["body"])
+                    chosen = ("approved", snap["meta"]["variant"], snap["body"], snap["extras"])
                     fallback_version = snap["version"]
                     break
     if not chosen:
         return base
-    state, vv, body = chosen
+    state, vv, body, extras = chosen
     where = f"lessons/{lid}/{vname}"
     # HTML, оглавление, текст поиска и программа строятся из одного учебного представления.
     hidden = set(vv.get("editorialSections") or [])
-    body_html, toc = render_markdown(learning_view(body, hidden), make_link_check(project, where, r))
+    used = set()
+    link_check, image_check = make_link_check(project, where, r), make_image_check(project, lid, where, r, used)
+    body_html, toc = render_markdown(learning_view(body, hidden), link_check, image_check)
+    package = {}
+    if state != "outline":
+        for key in ("intro", "brief"):
+            if extras.get(key):
+                package[key + "Html"] = render_markdown(extras[key], link_check, image_check)[0]
+        info = vv.get("infographic")
+        if isinstance(info, dict) and info.get("src") and check_image_file(project, lid, info["src"], where, r):
+            used.add(info["src"])
+            package["infographic"] = {"src": f"media/{lid}/{info['src']}", "alt": info.get("alt") or "",
+                                      "caption": info.get("caption"), "description": info.get("description")}
+        items = [x for x in (media_item(i, where, r) for i in vv.get("media") or []) if x]
+        if items:
+            package["media"] = items
+        quiz = extras.get("quiz")
+        if quiz and check_quiz(quiz, where, Report()):
+            package["quiz"] = {"version": str(quiz["version"]), "questions": [
+                {k: q[k] for k in ("question", "options", "answer", "explanation")} for q in quiz["questions"]]}
+    text_parts = [html_to_text(package.get("introHtml", "")), html_to_text(body_html), html_to_text(package.get("briefHtml", ""))]
     out = {
         "state": state, "version": vv["version"], "updatedAt": vv.get("updatedAt"), "nextReviewAt": vv.get("nextReviewAt"),
         "goal": vv.get("goal"), "takeaway": vv.get("takeaway"), "scope": vv.get("scope"), "subtitle": vv.get("subtitle"),
@@ -520,8 +750,10 @@ def resolve_variant(project, lid, vname, mode, r):
         "html": body_html, "toc": toc,
         "program": [p for p in vv.get("program") or [] if p not in hidden] or [t["title"] for t in toc],
         "sources": [{"id": s["id"], "locator": s.get("locator"), "supports": s.get("supports")} for s in vv.get("sources", [])],
-        "text": html_to_text(body_html),
+        "text": " ".join(t for t in text_parts if t),
+        **package,
     }
+    out["_images"] = sorted(used)
     if state == "approved":
         a = vv["approval"]
         out["approval"] = {"reviewer": a["reviewer"], "date": a["date"], "version": a["version"]}
@@ -536,18 +768,24 @@ def resolve_variant(project, lid, vname, mode, r):
     return out
 
 
-def build_data(project, mode, r):
+def build_data(project, mode, r, images=None):
+    """images: множество (тема, файл) иллюстраций, на которые ссылается публикуемое представление."""
     lessons = {}
     for m in project.modules:
         for lid in m["lessons"]:
             meta = project.lessons.get(lid)
             if not meta:
                 continue
+            variants = {vn: resolve_variant(project, lid, vn, mode, r) for vn in VARIANT_IDS}
+            for v in variants.values():
+                for name in v.pop("_images", []):
+                    if images is not None:
+                        images.add((lid, name))
             lessons[lid] = {
                 "id": lid, "moduleId": m["id"], "title": meta["title"], "order": meta.get("order", 1),
                 "keywords": meta.get("keywords", []), "related": meta.get("relatedLessonIds", []),
                 "alsoIn": meta.get("alsoInModules", []),
-                "variants": {vn: resolve_variant(project, lid, vn, mode, r) for vn in VARIANT_IDS},
+                "variants": variants,
             }
     used = {s["id"] for l in lessons.values() for v in l["variants"].values() for s in v.get("sources", [])}
     sources = {sid: {k: s.get(k) for k in ("title", "author", "year", "type", "url")} for sid, s in project.sources.items() if sid in used}
@@ -561,23 +799,34 @@ def build_data(project, mode, r):
     }
 
 
-def build(project, mode, out_dir=None):
-    """mode: production -> dist/, preview -> preview/. Возвращает (Report, путь)."""
+def build(project, mode, out_dir=None, allowed_parent=None):
+    """mode: production -> dist/, preview -> preview/. Возвращает (Report, путь).
+    Состав сборки: index.html, app.js, styles.css, data.js и только те иллюстрации из content/media/,
+    на которые ссылается публикуемое представление."""
     r = check_project(project)
     if r.errors and mode == "production":
         return r, None
     out = Path(out_dir) if out_dir else project.root / ("dist" if mode == "production" else "preview")
-    if out.resolve() == project.root.resolve() or project.root.resolve() not in out.resolve().parents:
+    parent = Path(allowed_parent or project.root).resolve()
+    if out.resolve() == parent or parent not in out.resolve().parents:
         raise SystemExit("Каталог сборки должен находиться внутри проекта")
-    data = build_data(project, mode, r)
+    images = set()
+    data = build_data(project, mode, r, images)
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
     for f in SITE_FILES:
         shutil.copyfile(project.root / "site" / f, out / f)
+    media_root = (project.content / "media").resolve()
+    for lid, name in sorted(images):
+        src = (media_dir(project, lid) / name).resolve()
+        if media_root not in src.parents:
+            r.error("сборка", f"иллюстрация вне content/media: {src}"); continue
+        (out / "media" / lid).mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(src, out / "media" / lid / name)
     js = "window.LMB_DATA = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";\n"
     write_text(out / "data.js", js)
-    expected = set(SITE_FILES) | {"data.js"}
+    expected = set(SITE_FILES) | {"data.js"} | {f"media/{lid}/{name}" for lid, name in images}
     actual = {str(p.relative_to(out)).replace("\\", "/") for p in out.rglob("*") if p.is_file()}
     if actual != expected:
         r.error("сборка", f"непредусмотренный состав файлов: {sorted(actual ^ expected)}")
@@ -592,7 +841,11 @@ def cmd_check(project, args):
     return 1 if r.errors else 0
 
 
+PACKAGE_LABELS = [("intro", "введение"), ("brief", "за 2 минуты"), ("infographic", "инфографика"), ("media", "видео"), ("quiz", "тест")]
+
+
 def cmd_status(project, args):
+    """Сводка для редактора; для саммари перечисляет незаполненные блоки учебного пакета."""
     print(f"{'Тема':32} {'Врачи':34} {'Администраторы':30}")
     for m in project.modules:
         print(f"{m['n']} {m['title']}")
@@ -605,8 +858,11 @@ def cmd_status(project, args):
                 v = meta["variants"].get(vn) or {}
                 if not v.get("body"):
                     cols.append("материал готовится"); continue
-                ok = approval_problem(meta, vn, project.body(lid, vn)) is None
+                ok = project.approval_problem(lid, vn) is None
                 s = f"{v.get('contentKind')} {v.get('version')} {v.get('editorialStatus')}{' ✓' if ok else ''}"
+                if v.get("contentKind") == "summary":
+                    missing = [label for key, label in PACKAGE_LABELS if not v.get(key)]
+                    s += " · нет: " + ", ".join(missing) if missing else " · пакет полный"
                 if vn == "admins" and admin_sync_state(project, lid) == "needs_sync":
                     s += " ТРЕБУЕТ СВЕРКИ"
                 cols.append(s)
@@ -644,7 +900,17 @@ def cmd_bundle(project, args):
         print(f"Нет сборки в {src}"); return 1
     page = (src / "index.html").read_text(encoding="utf-8")
     css = (src / "styles.css").read_text(encoding="utf-8")
-    data = (src / "data.js").read_text(encoding="utf-8").replace("</", "<\\/")
+    data = (src / "data.js").read_text(encoding="utf-8")
+    mime = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif", ".svg": "image/svg+xml"}
+
+    def inline(m):
+        p = src / "media" / m.group(1) / m.group(2)
+        if not p.exists():
+            return m.group(0)
+        import base64
+        return f"data:{mime[p.suffix.lower()]};base64," + base64.b64encode(p.read_bytes()).decode("ascii")
+    # Однофайловая страница не может ссылаться на соседние файлы: иллюстрации встраиваются.
+    data = re.sub(r"media/([a-z0-9-]+)/([A-Za-z0-9][A-Za-z0-9._-]*)", inline, data).replace("</", "<\\/")
     app = (src / "app.js").read_text(encoding="utf-8").replace("</script", "<\\/script")
     body = page[page.index("<body>") + len("<body>"): page.index("</body>")]
     title = re.search(r"<title>(.*?)</title>", page).group(1).split(" — ")[0]
@@ -659,7 +925,7 @@ def cmd_bundle(project, args):
 def cmd_serve(project, args):
     import functools
     import http.server
-    target = project.root / args.target
+    target = project.root / ("demo/site" if args.target == "demo" else args.target)
     if not (target / "index.html").exists():
         print(f"Нет сборки в {target}. Сначала выполните: python scripts/lmb.py {'build' if args.target == 'dist' else 'preview'}")
         return 1
@@ -670,9 +936,33 @@ def cmd_serve(project, args):
 
 
 def cmd_checksum(project, args):
-    meta = project.lessons[args.lesson]
-    print(compute_checksum(meta, args.variant, project.body(args.lesson, args.variant)))
+    print(project.checksum(args.lesson, args.variant))
     return 0
+
+
+def cmd_demo(project, args):
+    """Локальная демонстрация шаблона на нейтральной технической фикстуре tests/fixtures/demo-lesson.
+    Результат — demo/site (вне dist/ и preview/, не публикуется). Медицинского содержания не создаёт."""
+    fixture = project.root / "tests" / "fixtures" / "demo-lesson"
+    demo = project.root / "demo"
+    src = demo / "src"
+    if demo.exists():
+        shutil.rmtree(demo)
+    for d in ("content", "site", "templates"):
+        shutil.copytree(project.root / d, src / d)
+    module = read_json(fixture / "module.json")
+    mods = read_json(src / "content" / "modules.json")
+    module["n"] = f"{max(int(m['n']) for m in mods) + 1:02d}"
+    module["displayOrder"] = max(m["displayOrder"] for m in mods if m["category"] == module["category"]) + 1
+    mods.append(module)
+    write_json(src / "content" / "modules.json", mods)
+    lid = module["lessons"][0]
+    shutil.copytree(fixture / "lesson", src / "content" / "lessons" / lid)
+    shutil.copytree(fixture / "media", src / "content" / "media" / lid)
+    r, out = build(Project(src), "preview", demo / "site", allowed_parent=demo)
+    r.print()
+    print(f"Демонстрация: {out}\nОткрыть: python scripts/lmb.py serve demo  →  http://127.0.0.1:8000/#lesson/{lid}")
+    return 1 if r.errors else 0
 
 
 def cmd_approve(project, args):
@@ -694,15 +984,17 @@ def cmd_approve(project, args):
     if own:
         print("Отказ: сначала исправьте ошибки темы:"); [print("   " + e) for e in own]; return 1
     body = project.body(lid, vn)
+    extras = project.extras(lid, vn)
     date = args.date or dt.date.today().isoformat()
     v["editorialStatus"] = "approved"
-    v["approval"] = {"version": v["version"], "checksum": compute_checksum(meta, vn, body), "reviewer": args.reviewer.strip(),
+    v["approval"] = {"version": v["version"], "checksum": compute_checksum(meta, vn, body, extras), "reviewer": args.reviewer.strip(),
                      "date": date, "note": args.note}
     d = project.lesson_dir(lid)
     write_json(d / "metadata.json", meta)
     hist = d / "history"
     write_text(hist / f"{vn}-{v['version']}.md", body)
-    write_json(hist / f"{vn}-{v['version']}.json", {"title": meta["title"], "variant": v})
+    # Снимок хранит тексты пакета; иллюстрации проверяются по хешам при использовании снимка.
+    write_json(hist / f"{vn}-{v['version']}.json", {"title": meta["title"], "variant": v, "extras": extras})
     print(f"Утверждено: {lid}/{vn} {v['version']} — {args.reviewer} {date}")
     print(f"Контрольная сумма: {v['approval']['checksum']}")
     return 0
@@ -742,7 +1034,8 @@ def main(argv=None):
     sub.add_parser("status")
     p = sub.add_parser("build"); p.add_argument("-v", "--verbose", action="store_true")
     p = sub.add_parser("preview"); p.add_argument("-v", "--verbose", action="store_true")
-    p = sub.add_parser("serve"); p.add_argument("target", choices=["preview", "dist"]); p.add_argument("--port", type=int, default=8000)
+    p = sub.add_parser("serve"); p.add_argument("target", choices=["preview", "dist", "demo"]); p.add_argument("--port", type=int, default=8000)
+    sub.add_parser("demo")
     p = sub.add_parser("bundle"); p.add_argument("target", choices=["preview", "dist"])
     p = sub.add_parser("checksum"); p.add_argument("lesson"); p.add_argument("variant", choices=VARIANT_IDS)
     p = sub.add_parser("approve"); p.add_argument("lesson"); p.add_argument("variant", choices=VARIANT_IDS)
@@ -755,6 +1048,7 @@ def main(argv=None):
     if args.cmd == "build": return cmd_build(project, args, "production")
     if args.cmd == "preview": return cmd_build(project, args, "preview")
     if args.cmd == "serve": return cmd_serve(project, args)
+    if args.cmd == "demo": return cmd_demo(project, args)
     if args.cmd == "bundle": return cmd_bundle(project, args)
     if args.cmd == "checksum": return cmd_checksum(project, args)
     if args.cmd == "approve": return cmd_approve(project, args)

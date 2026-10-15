@@ -125,6 +125,36 @@
     return states.every(s => s === 'read') ? '<span class="read-mark">Прочитано</span>' : '';
   }
 
+  // ------------------------------------------------------------ тесты: результат на этом устройстве, отдельно по аудитории и версии теста
+  const QUIZ_KEY = 'lmb-academy-quiz-v1';
+  let quizzes = {};
+  let quizStorageOk = true;
+  try { quizzes = JSON.parse(localStorage.getItem(QUIZ_KEY) || '{}') || {}; } catch { quizStorageOk = false; }
+  const passMark = n => Math.ceil(n * 0.8);
+  const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const quizRec = (lesson, v = variant) => { const q = vOf(lesson, v).quiz; return q ? (quizzes[lesson.id + ':' + v] || {})[q.version] : null; };
+  function quizState(lesson, v = variant) {
+    const cur = vOf(lesson, v);
+    if (!cur.quiz || !isSummary(cur.state)) return 'none';
+    const rec = quizRec(lesson, v);
+    if (rec && rec.passedAt) return 'passed';
+    return Object.values(quizzes[lesson.id + ':' + v] || {}).some(x => x && x.passedAt) ? 'updated' : 'open';
+  }
+  function saveAttempt(lesson, score, total) {
+    const q = vOf(lesson).quiz, key = lesson.id + ':' + variant;
+    const rec = quizzes[key] = quizzes[key] || {};
+    const e = rec[q.version] = rec[q.version] || {best: 0};
+    // Лучший результат и дата первого прохождения не стираются последующей неудачной попыткой.
+    e.best = Math.max(e.best || 0, score); e.total = total; e.lastScore = score; e.lastAt = today();
+    if (score >= passMark(total) && !e.passedAt) e.passedAt = today();
+    try { localStorage.setItem(QUIZ_KEY, JSON.stringify(quizzes)); return true; } catch { quizStorageOk = false; return false; }
+  }
+  const passBadge = lesson => { const st = quizState(lesson); return st === 'passed' ? '<span class="pass-mark">Пройдено</span>' : st === 'updated' ? '<span class="read-mark updated">Тест обновлён</span>' : ''; };
+  function modulePassMark(m) {
+    const ls = lessonsOf(m).filter(l => quizState(l) !== 'none');
+    return ls.length && ls.every(l => quizState(l) === 'passed') ? '<span class="pass-mark">Пройдено</span>' : '';
+  }
+
   // ------------------------------------------------------------ поиск
   const norm = s => String(s || '').toLocaleLowerCase('ru').replace(/ё/g, 'е').replace(/[^a-zа-я0-9]+/gi, ' ').trim();
   const ENDINGS = /(иями|ями|ами|ого|его|ому|ему|ыми|ими|ий|ый|ой|ая|яя|ое|ее|ие|ые|ую|юю|ам|ям|ах|ях|ом|ем|ов|ев|ей|а|я|о|е|и|ы|у|ю|ь|й)$/;
@@ -185,7 +215,7 @@
   }
   const lessonRow = l => {
     const v = vOf(l), rs = readState(l);
-    return `<li><a href="${href(variant, 'lesson/' + l.id)}"><span class="item-body"><span class="item-title">${esc(l.title)}</span><span class="item-meta">${chip(v.state)}${rs === 'read' ? '<span class="read-mark">Прочитано</span>' : rs === 'outdated' ? '<span class="read-mark updated">Обновлено</span>' : ''}</span></span></a></li>`;
+    return `<li><a href="${href(variant, 'lesson/' + l.id)}"><span class="item-body"><span class="item-title">${esc(l.title)}</span><span class="item-meta">${chip(v.state)}${rs === 'read' ? '<span class="read-mark">Прочитано</span>' : rs === 'outdated' ? '<span class="read-mark updated">Обновлено</span>' : ''}${passBadge(l)}</span></span></a></li>`;
   };
 
   // ------------------------------------------------------------ каталог
@@ -195,10 +225,18 @@
     main.innerHTML = rolebar() + `<h1 class="page-title">Направления</h1>
       <div class="search"><label for="search">Поиск по темам</label><div class="search-field"><input type="search" id="search" value="${esc(query)}" autocomplete="off"><button type="button" class="search-clear" id="clear-search" aria-label="Очистить поиск" ${query ? '' : 'hidden'}>×</button></div></div>
       <div class="filters" role="group" aria-label="Группы">${[null, ...groups].map(g => `<button type="button" class="filter ${g === group ? 'selected' : ''}" data-group="${g ? g.id : ''}" aria-pressed="${g === group}">${g ? esc(g.title) : 'Все'}</button>`).join('')}</div>
+      ${progressLine()}
       <p class="result-count" id="result-count"></p>
       <div id="cards"></div>`;
     renderCards();
     document.getElementById('search').addEventListener('input', e => { query = e.target.value; document.getElementById('clear-search').hidden = !query; renderCards(); });
+  }
+  // «Пройдено X из Y тем»: Y — опубликованные темы выбранной аудитории, у которых есть тест.
+  function progressLine() {
+    const withQuiz = allLessons.filter(l => quizState(l) !== 'none');
+    if (!withQuiz.length) return '';
+    const passed = withQuiz.filter(l => quizState(l) === 'passed').length;
+    return `<p class="progress-line">Пройдено ${passed} из ${withQuiz.length} тем <span class="hint">${quizStorageOk ? 'Прогресс сохраняется на этом устройстве' : 'Прогресс не сохраняется: хранилище браузера недоступно'}</span></p>`;
   }
   const section = (g, body) => `<section class="group" aria-labelledby="g-${g.id}"><h2 class="group-title" id="g-${g.id}">${esc(g.title)}</h2>${body}</section>`;
   function renderCards() {
@@ -216,7 +254,7 @@
     count.hidden = true;
     const shown = group ? [group] : groups;
     box.innerHTML = shown.map(g => section(g, `<ul class="list catalog">${modulesIn(g).map(m =>
-      `<li><a href="${moduleHref(m)}">${icon(m.icon)}<span class="item-body"><span class="item-title">${esc(m.title)}</span><span class="item-meta">${moduleStatus(m)}${readMark(m)}</span></span></a></li>`).join('')}</ul>`)).join('');
+      `<li><a href="${moduleHref(m)}">${icon(m.icon)}<span class="item-body"><span class="item-title">${esc(m.title)}</span><span class="item-meta">${moduleStatus(m)}${readMark(m)}${modulePassMark(m)}</span></span></a></li>`).join('')}</ul>`)).join('');
     live.textContent = `Направлений: ${shown.reduce((n, g) => n + modulesIn(g).length, 0)}`;
   }
   const emptyState = () => `<div class="empty"><p>Ничего не найдено.</p><button type="button" class="button" data-reset>Сбросить поиск и фильтр</button></div>`;
@@ -265,6 +303,73 @@
     const fwd = `<a class="next" href="${groupHref(g)}"><small>Далее</small>К направлениям</a>`;
     return `<nav class="pager" aria-label="Соседние материалы">${prev ? `<a href="${href(variant, 'lesson/' + prev.id)}"><small>Назад</small>${esc(prev.title)}</a>` : back}${next ? `<a class="next" href="${href(variant, 'lesson/' + next.id)}"><small>Далее</small>${esc(next.title)}</a>` : fwd}</nav>`;
   }
+  let currentLessonId = null;
+  function infographicBlock(v) {
+    const g = v.infographic;
+    if (!g || !g.src) return '';
+    return `<section class="infographic" id="block-infographic" aria-labelledby="info-title"><h2 id="info-title">Инфографика</h2>
+      <figure class="figure main-figure"><button type="button" class="zoom" data-zoom="${esc(g.src)}" aria-label="Увеличить: ${esc(g.alt)}"><img src="${esc(g.src)}" alt="${esc(g.alt)}" loading="lazy"></button>${g.caption ? `<figcaption>${esc(g.caption)}</figcaption>` : ''}</figure>
+      ${g.description ? `<details class="more"><summary>Текстовое описание</summary><p>${esc(g.description)}</p></details>` : ''}</section>`;
+  }
+  const YT_ID = /^[A-Za-z0-9_-]{11}$/;
+  function mediaBlock(v) {
+    const items = (v.media || []).filter(x => /^https:\/\//.test(x.url));
+    if (!items.length) return '';
+    return `<section class="media" id="block-media" aria-labelledby="media-title"><h2 id="media-title">Видео и ссылки</h2><ul class="media-list">${items.map((x, i) => {
+      const info = [x.note, x.duration].filter(Boolean).join(' · ');
+      let host = ''; try { host = new URL(x.url).hostname.replace(/^www\./, ''); } catch { /* адрес проверен при сборке */ }
+      const yt = x.youtubeId && YT_ID.test(x.youtubeId);
+      const open = `<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${yt ? 'Открыть на YouTube' : 'Открыть'}</a>`;
+      return `<li><p class="media-title">${esc(x.title)}</p>${info ? `<p class="media-info">${esc(info)}</p>` : ''}
+        <p class="media-actions">${yt ? `<button type="button" class="button" data-play="${i}">Смотреть</button>${open}` : `${open}<span class="hint">${esc(host)}</span>`}</p>${yt ? `<div class="video-slot" id="video-${i}"></div>` : ''}</li>`;
+    }).join('')}</ul></section>`;
+  }
+  function quizStatus(l) {
+    const st = quizState(l), rec = quizRec(l), n = vOf(l).quiz.questions.length;
+    if (st === 'passed') return `<span class="pass-mark">Пройдено</span> Лучший результат: ${rec.best} из ${rec.total}, ${fmtDate(rec.passedAt)}.`;
+    if (st === 'updated') return '<span class="read-mark updated">Тест обновлён</span> Пройдите его заново.';
+    return `${n} вопросов для самопроверки. Для отметки «Пройдено» нужно ${passMark(n)} правильных ответа из ${n}.`;
+  }
+  function quizBlock(l) {
+    const q = vOf(l).quiz;
+    if (!q) return '';
+    return `<section class="quiz" id="block-quiz" aria-labelledby="quiz-title"><h2 id="quiz-title">Проверка знаний</h2>
+      <p class="quiz-status" id="quiz-status">${quizStatus(l)}</p>
+      <form id="quiz-form" data-lesson="${esc(l.id)}" novalidate>${q.questions.map((x, i) => `<fieldset class="question" id="q-${i}"><legend>${i + 1}. ${esc(x.question)}</legend>
+        ${x.options.map((o, j) => `<label class="option"><input type="radio" name="q${i}" value="${j}"><span>${esc(o)}</span></label>`).join('')}<p class="feedback" id="fb-${i}" hidden></p></fieldset>`).join('')}
+      <div class="quiz-actions"><button type="submit" class="button">Проверить</button></div>
+      <div class="quiz-result" id="quiz-result" role="status" aria-live="polite"></div></form></section>`;
+  }
+  function checkQuiz(form) {
+    const l = D.lessons[form.dataset.lesson], q = vOf(l).quiz, n = q.questions.length;
+    const answers = q.questions.map((_, i) => { const c = form.querySelector(`input[name="q${i}"]:checked`); return c ? +c.value : null; });
+    const missing = answers.map((a, i) => a === null ? i : -1).filter(i => i >= 0);
+    const result = document.getElementById('quiz-result');
+    if (missing.length) {
+      // Неполная попытка не засчитывается.
+      result.innerHTML = `<p>Ответьте на все вопросы, чтобы завершить тест. Осталось: ${missing.length}.</p>`;
+      form.querySelector(`#q-${missing[0]} input`).focus();
+      return;
+    }
+    let score = 0;
+    q.questions.forEach((x, i) => {
+      const ok = answers[i] === x.answer;
+      if (ok) score++;
+      const fb = document.getElementById('fb-' + i);
+      fb.hidden = false;
+      fb.className = 'feedback ' + (ok ? 'ok' : 'wrong');
+      fb.innerHTML = `<strong>${ok ? 'Верно.' : 'Неверно.'}</strong> ${ok ? '' : `Правильный ответ: ${esc(x.options[x.answer])}. `}${esc(x.explanation)}`;
+      form.querySelectorAll(`input[name="q${i}"]`).forEach(inp => { inp.disabled = true; inp.closest('.option').classList.toggle('correct', +inp.value === x.answer); });
+    });
+    const saved = saveAttempt(l, score, n);
+    const passed = score >= passMark(n);
+    form.querySelector('button[type="submit"]').hidden = true;
+    result.innerHTML = `<p class="score"><strong>Правильных ответов: ${score} из ${n}.</strong> ${passed ? 'Тема пройдена.' : `Для прохождения нужно ${passMark(n)}.`}</p>
+      ${saved ? '' : '<p class="hint">Результат не сохранится: хранилище браузера недоступно.</p>'}
+      <p class="actions"><button type="button" class="button" data-quiz-retry>${passed ? 'Пройти ещё раз' : 'Повторить тест'}</button>${passed ? '' : `<a href="${href(variant, 'lesson/' + l.id + '/block-material')}" data-section="block-material">К материалу</a>`}</p>`;
+    document.getElementById('quiz-status').innerHTML = quizStatus(l);
+    const slot = document.querySelector('.pass-slot'); if (slot) slot.innerHTML = passBadge(l);
+  }
   function renderLesson(id, anchor) {
     const l = D.lessons[id];
     if (!l || !moduleById(l.moduleId)) return renderNotFound();
@@ -306,14 +411,25 @@
       const info = [src.type, src.author, src.year, s.locator].filter(Boolean).join(' · ');
       return `<li>${src.url ? `<a href="${esc(src.url)}" target="_blank" rel="noopener noreferrer">${esc(src.title)}</a>` : esc(src.title)}${info ? `<span class="source-info">${esc(info)}</span>` : ''}${s.supports ? `<span class="source-info">${esc(s.supports)}</span>` : ''}</li>`; }).join('');
 
+    // Блоки учебного пакета показываются, только если заполнены; ссылки-якоря — только на них.
+    const jumps = [['block-material', 'Материал'], v.briefHtml && ['block-brief', 'За 2 минуты'], v.infographic && ['block-infographic', 'Инфографика'],
+      v.media && v.media.length && ['block-media', 'Видео'], v.quiz && ['block-quiz', 'Тест']].filter(Boolean);
+    const jumpNav = jumps.length > 1 ? `<nav class="jump-nav" aria-label="Блоки темы">${jumps.map(([bid, t]) => `<a href="${href(variant, 'lesson/' + l.id + '/' + bid)}" data-section="${bid}">${t}</a>`).join('')}</nav>` : '';
+    currentLessonId = l.id;
+
     main.innerHTML = rolebar() + `<article class="lesson">${path}
       <header class="lesson-head">${titleWithIcon(m, l.title)}
-      <p class="lesson-meta">${chip(v.state)}${v.subtitle ? `<span>${esc(v.subtitle)}</span>` : ''}${v.updatedAt ? `<span>Обновлено ${fmtDate(v.updatedAt)}</span>` : ''}</p></header>
+      <p class="lesson-meta">${chip(v.state)}<span class="pass-slot">${passBadge(l)}</span>${v.subtitle ? `<span>${esc(v.subtitle)}</span>` : ''}${v.updatedAt ? `<span>Обновлено ${fmtDate(v.updatedAt)}</span>` : ''}</p></header>
+      ${jumpNav}
       <div class="lesson-layout"><div class="lesson-body">
       ${v.takeaway ? `<p class="takeaway"><strong>Главное.</strong> ${esc(v.takeaway)}</p>` : ''}
+      <div class="material" id="block-material">
+      ${v.introHtml ? `<div class="text intro">${v.introHtml}</div>` : ''}
       ${toc.length > 1 ? `<details class="toc-mobile"><summary>Содержание</summary><nav aria-label="Содержание">${tocLinks}</nav></details>` : ''}
-      <div class="text">${v.html}</div>
-      ${sources ? `<details class="block"><summary>Источники</summary><ul class="sources">${sources}</ul></details>` : ''}
+      <div class="text">${v.html}</div></div>
+      ${v.briefHtml ? `<section class="brief" id="block-brief" aria-labelledby="brief-title"><h2 id="brief-title">За 2 минуты</h2><div class="text">${v.briefHtml}</div></section>` : ''}
+      ${infographicBlock(v)}${mediaBlock(v)}${quizBlock(l)}
+      ${sources ?`<details class="block"><summary>Источники</summary><ul class="sources">${sources}</ul></details>` : ''}
       ${relatedBlock}
       <div class="lesson-actions"><div class="read-box">${readBlock(l)}</div>${embedded ? '' : '<button type="button" class="link-button" data-print>Печать</button>'}${otherAction}</div>
       <details class="block about"><summary>О материале</summary><dl>${about.map(([k, val]) => `<dt>${esc(k)}</dt><dd>${esc(val)}</dd>`).join('')}</dl></details>
@@ -377,6 +493,27 @@
       }
       return;
     }
+    const zoomBtn = e.target.closest('[data-zoom]');
+    if (zoomBtn) { openZoom(zoomBtn); return; }
+    if (e.target.closest('#zoom-close') || e.target === zoomDialog) { zoomDialog.close(); return; }
+    const play = e.target.closest('[data-play]');
+    if (play) {
+      const x = (vOf(D.lessons[currentLessonId]).media || []).filter(y => /^https:\/\//.test(y.url))[+play.dataset.play];
+      const slot = document.getElementById('video-' + play.dataset.play);
+      if (x && slot && YT_ID.test(x.youtubeId || '')) {
+        const src = `https://www.youtube-nocookie.com/embed/${x.youtubeId}?rel=0${x.start ? '&start=' + Number(x.start) : ''}`;
+        slot.innerHTML = `<div class="video"><iframe src="${src}" title="${esc(x.title)}" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`;
+        play.hidden = true;
+        slot.querySelector('iframe').focus();
+      }
+      return;
+    }
+    if (e.target.closest('[data-quiz-retry]')) {
+      const sec = document.getElementById('block-quiz');
+      sec.outerHTML = quizBlock(D.lessons[currentLessonId]);
+      const first = document.querySelector('#quiz-form input'); if (first) { first.focus(); document.getElementById('block-quiz').scrollIntoView({block: 'start'}); }
+      return;
+    }
     const complete = e.target.closest('[data-complete]');
     if (complete) {
       const l = D.lessons[complete.dataset.complete];
@@ -386,6 +523,24 @@
       const btn = document.querySelector('.read-box [data-complete]'); if (btn) btn.focus();
     }
   });
+  document.addEventListener('submit', e => {
+    const form = e.target.closest('#quiz-form');
+    if (form) { e.preventDefault(); checkQuiz(form); }
+  });
+  // Увеличенное изображение: системный диалог, закрывается кнопкой, Esc и щелчком по фону; фокус возвращается.
+  const zoomDialog = document.getElementById('zoom');
+  let zoomTrigger = null;
+  function openZoom(btn) {
+    const img = btn.querySelector('img');
+    const big = document.getElementById('zoom-img');
+    big.src = btn.dataset.zoom; big.alt = img ? img.alt : '';
+    const open = document.getElementById('zoom-open');
+    open.href = btn.dataset.zoom; open.hidden = embedded;
+    zoomTrigger = btn;
+    if (typeof zoomDialog.showModal === 'function') { zoomDialog.showModal(); document.getElementById('zoom-close').focus(); }
+    else window.open(btn.dataset.zoom, '_blank', 'noopener');
+  }
+  zoomDialog.addEventListener('close', () => { if (zoomTrigger) zoomTrigger.focus(); zoomTrigger = null; });
   document.getElementById('menu-toggle').addEventListener('click', e => {
     const open = document.getElementById('sidebar').classList.toggle('open');
     e.currentTarget.setAttribute('aria-expanded', String(open));
