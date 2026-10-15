@@ -33,6 +33,10 @@
         {"title": "Пример видео YouTube", "url": "https://www.youtube.com/watch?v=jNQXAC9IVRw", "note": "Нейтральное видео для проверки встраивания.", "duration": "0:19"},
         {"title": "Пример внешней ссылки", "url": "https://www.example.com/", "note": "Облачные диски и другие сайты открываются обычной ссылкой."}
       ],
+      "game": {
+        "title": "Порядок блоков темы",
+        "description": "Техническая демонстрация: соберите блоки страницы в правильном порядке."
+      },
       "quiz": "doctors.quiz.json",
       "sources": [],
       "claims": [],

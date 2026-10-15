@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Игра: соберите цепочку</title>
+<style>
+  /* Шаблон игры ЛМБ Академии: «собери цепочку по порядку». Без внешних ресурсов, без хранения данных. */
+  :root { --bg: #f6f6f3; --surface: #fff; --text: #1f2924; --muted: #4c5751; --line: #d9ddd6; --green: #2b4a3c; --soft: #e8eee9; --wine: #8a3f45; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 Arial, Helvetica, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 21px; margin: 0 0 4px; }
+  p { margin: 0 0 12px; color: var(--muted); }
+  h2 { font-size: 15px; margin: 16px 0 8px; color: var(--muted); }
+  .pool, .chain { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .chain { counter-reset: step; min-height: 48px; padding: 8px; border: 1px dashed var(--line); border-radius: 6px; background: var(--surface); }
+  .chain li { counter-increment: step; display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-radius: 5px; background: var(--soft); }
+  .chain li::before { content: counter(step) "."; font-weight: bold; color: var(--green); }
+  .chain li.wrong { background: #f4e3e4; }
+  .chain li.right { outline: 2px solid var(--green); }
+  button { font: inherit; min-height: 44px; border-radius: 5px; cursor: pointer; }
+  .pool button { width: 100%; text-align: left; padding: 10px 12px; border: 1px solid var(--line); background: var(--surface); color: var(--text); }
+  .pool button:hover { border-color: var(--green); }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .primary { background: var(--green); color: #fff; border: 0; padding: 8px 16px; }
+  .secondary { background: var(--surface); color: var(--green); border: 1px solid var(--line); padding: 8px 16px; }
+  .result { margin-top: 12px; font-weight: bold; }
+  :focus-visible { outline: 3px solid #a35a3c; outline-offset: 2px; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title"></h1>
+  <p id="task"></p>
+  <h2>Ваша цепочка</h2>
+  <ol class="chain" id="chain" aria-live="polite"></ol>
+  <h2>Выберите следующий шаг</h2>
+  <ul class="pool" id="pool"></ul>
+  <div class="actions">
+    <button type="button" class="primary" id="check">Проверить</button>
+    <button type="button" class="secondary" id="undo">Убрать последний</button>
+    <button type="button" class="secondary" id="reset">Начать заново</button>
+  </div>
+  <p class="result" id="result" role="status"></p>
+</main>
+<script>
+  // Содержание игры. Замените заголовок, задание и шаги в правильном порядке; пояснение — необязательно.
+  const GAME = {
+    title: 'Соберите цепочку',
+    task: 'Нажимайте шаги в правильном порядке. Порядок можно исправить кнопкой «Убрать последний».',
+    steps: ['Шаг 1', 'Шаг 2', 'Шаг 3', 'Шаг 4'],
+    explanation: 'Короткое пояснение после правильного ответа.'
+  };
+
+  const $ = id => document.getElementById(id);
+  let chosen = [];
+  const shuffled = GAME.steps.map((s, i) => [Math.random(), s]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+  function render() {
+    $('chain').innerHTML = chosen.map(s => `<li>${s}</li>`).join('');
+    $('pool').innerHTML = shuffled.filter(s => !chosen.includes(s)).map(s => `<li><button type="button" data-step="${s}">${s}</button></li>`).join('');
+  }
+  $('title').textContent = GAME.title;
+  $('task').textContent = GAME.task;
+  $('pool').addEventListener('click', e => { const b = e.target.closest('[data-step]'); if (b) { chosen.push(b.dataset.step); $('result').textContent = ''; render(); const next = $('pool').querySelector('button'); (next || $('check')).focus(); } });
+  $('undo').addEventListener('click', () => { chosen.pop(); $('result').textContent = ''; render(); });
+  $('reset').addEventListener('click', () => { chosen = []; $('result').textContent = ''; render(); });
+  $('check').addEventListener('click', () => {
+    if (chosen.length < GAME.steps.length) { $('result').textContent = `Выберите все шаги: осталось ${GAME.steps.length - chosen.length}.`; return; }
+    const items = $('chain').querySelectorAll('li');
+    let right = 0;
+    chosen.forEach((s, i) => { const ok = s === GAME.steps[i]; if (ok) right++; items[i].className = ok ? 'right' : 'wrong'; });
+    $('result').textContent = right === GAME.steps.length ? `Верно! ${GAME.explanation || ''}` : `На своём месте ${right} из ${GAME.steps.length}. Исправьте отмеченные шаги.`;
+  });
+  render();
+</script>
+</body>
+</html>

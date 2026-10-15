@@ -324,6 +324,42 @@
         <p class="media-actions">${yt ? `<button type="button" class="button" data-play="${i}">Смотреть</button>${open}` : `${open}<span class="hint">${esc(host)}</span>`}</p>${yt ? `<div class="video-slot" id="video-${i}"></div>` : ''}</li>`;
     }).join('')}</ul></section>`;
   }
+  // Игра — самостоятельный модуль в изолированном iframe (только сценарии, без доступа к данным сайта).
+  // Её состояние не связано с тестом и отметками; в однофайловой версии игры не подключаются.
+  const gameAvailable = v => !!(v.game && /^games\/[a-z0-9-]+\/(doctors|admins)\/[A-Za-z0-9][A-Za-z0-9._-]*\.html$/.test(v.game.src) && !embedded);
+  function gameBlock(v) {
+    if (!gameAvailable(v)) return '';
+    return `<section class="game" id="block-game" aria-labelledby="game-title"><h2 id="game-title">Игра</h2>
+      <p class="game-name">${esc(v.game.title)}</p>${v.game.description ? `<p class="game-desc">${esc(v.game.description)}</p>` : ''}
+      <p><button type="button" class="button" data-game-start>Начать игру</button></p><div id="game-slot"></div></section>`;
+  }
+  function startGame(btn) {
+    const g = vOf(D.lessons[currentLessonId]).game;
+    const slot = document.getElementById('game-slot');
+    if (!g || !slot || !gameAvailable(vOf(D.lessons[currentLessonId]))) return;
+    slot.innerHTML = `<div class="game-frame" id="game-frame"><div class="game-bar"><span class="game-bar-title">${esc(g.title)}</span>
+      <button type="button" class="link-button" data-game-max aria-pressed="false">Развернуть</button><button type="button" class="link-button" data-game-close>Закрыть игру</button></div>
+      <iframe src="${esc(g.src)}" title="Игра: ${esc(g.title)}" sandbox="allow-scripts" referrerpolicy="no-referrer" loading="eager"></iframe></div>`;
+    btn.hidden = true;
+    slot.querySelector('iframe').focus();
+  }
+  function setGameMax(on) {
+    const frame = document.getElementById('game-frame');
+    if (!frame) return;
+    frame.classList.toggle('game-max', on);
+    document.body.classList.toggle('game-open', on);
+    const b = frame.querySelector('[data-game-max]');
+    b.textContent = on ? 'Свернуть' : 'Развернуть';
+    b.setAttribute('aria-pressed', String(on));
+    b.focus();
+  }
+  function closeGame() {
+    document.body.classList.remove('game-open');
+    const slot = document.getElementById('game-slot');
+    if (slot) slot.innerHTML = '';
+    const start = document.querySelector('[data-game-start]');
+    if (start) { start.hidden = false; start.focus(); }
+  }
   function quizStatus(l) {
     const st = quizState(l), rec = quizRec(l), n = vOf(l).quiz.questions.length;
     if (st === 'passed') return `<span class="pass-mark">Пройдено</span> Лучший результат: ${rec.best} из ${rec.total}, ${fmtDate(rec.passedAt)}.`;
@@ -413,7 +449,7 @@
 
     // Блоки учебного пакета показываются, только если заполнены; ссылки-якоря — только на них.
     const jumps = [['block-material', 'Материал'], v.briefHtml && ['block-brief', 'За 2 минуты'], v.infographic && ['block-infographic', 'Инфографика'],
-      v.media && v.media.length && ['block-media', 'Видео'], v.quiz && ['block-quiz', 'Тест']].filter(Boolean);
+      v.media && v.media.length && ['block-media', 'Видео'], gameAvailable(v) && ['block-game', 'Игра'], v.quiz && ['block-quiz', 'Тест']].filter(Boolean);
     const jumpNav = jumps.length > 1 ? `<nav class="jump-nav" aria-label="Блоки темы">${jumps.map(([bid, t]) => `<a href="${href(variant, 'lesson/' + l.id + '/' + bid)}" data-section="${bid}">${t}</a>`).join('')}</nav>` : '';
     currentLessonId = l.id;
 
@@ -428,7 +464,7 @@
       ${toc.length > 1 ? `<details class="toc-mobile"><summary>Содержание</summary><nav aria-label="Содержание">${tocLinks}</nav></details>` : ''}
       <div class="text">${v.html}</div></div>
       ${v.briefHtml ? `<section class="brief" id="block-brief" aria-labelledby="brief-title"><h2 id="brief-title">За 2 минуты</h2><div class="text">${v.briefHtml}</div></section>` : ''}
-      ${infographicBlock(v)}${mediaBlock(v)}${quizBlock(l)}
+      ${infographicBlock(v)}${mediaBlock(v)}${gameBlock(v)}${quizBlock(l)}
       ${sources ?`<details class="block"><summary>Источники</summary><ul class="sources">${sources}</ul></details>` : ''}
       ${relatedBlock}
       <div class="lesson-actions"><div class="read-box">${readBlock(l)}</div>${embedded ? '' : '<button type="button" class="link-button" data-print>Печать</button>'}${otherAction}</div>
@@ -451,6 +487,7 @@
   // ------------------------------------------------------------ маршруты
   // #, #admins, [#admins/]group/ID, [#admins/]module/ID, [#admins/]lesson/ID[/section-N]. Старые маршруты сохраняются.
   function route() {
+    document.body.classList.remove('game-open');
     let h = decodeURIComponent(location.hash.slice(1));
     if (/^section-\d+$/.test(h)) return;
     variant = /^admins(\/|$)/.test(h) ? 'admins' : 'doctors';
@@ -493,6 +530,11 @@
       }
       return;
     }
+    const gameStart = e.target.closest('[data-game-start]');
+    if (gameStart) { startGame(gameStart); return; }
+    const gameMax = e.target.closest('[data-game-max]');
+    if (gameMax) { setGameMax(!document.getElementById('game-frame').classList.contains('game-max')); return; }
+    if (e.target.closest('[data-game-close]')) { closeGame(); return; }
     const zoomBtn = e.target.closest('[data-zoom]');
     if (zoomBtn) { openZoom(zoomBtn); return; }
     if (e.target.closest('#zoom-close') || e.target === zoomDialog) { zoomDialog.close(); return; }
@@ -522,6 +564,9 @@
       live.textContent = readState(l) === 'read' ? 'Отмечено как прочитанное' : 'Отметка снята';
       const btn = document.querySelector('.read-box [data-complete]'); if (btn) btn.focus();
     }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.querySelector('.game-frame.game-max')) setGameMax(false);
   });
   document.addEventListener('submit', e => {
     const form = e.target.closest('#quiz-form');

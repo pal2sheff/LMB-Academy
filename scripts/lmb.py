@@ -114,7 +114,7 @@ class Project:
 
     def extras(self, lesson_id, variant):
         v = self.lessons[lesson_id]["variants"].get(variant) or {}
-        return collect_extras(self, lesson_id, v, self.body(lesson_id, variant))
+        return collect_extras(self, lesson_id, v, self.body(lesson_id, variant), vname=variant)
 
     def checksum(self, lesson_id, variant):
         return compute_checksum(self.lessons[lesson_id], variant, self.body(lesson_id, variant), self.extras(lesson_id, variant))
@@ -129,7 +129,10 @@ CHECKSUM_FIELDS = ["version", "contentKind", "coverage", "goal", "takeaway", "sc
                    "sources", "claims", "derivedFrom"]
 # Необязательные поля учебного пакета. В контрольную сумму входят, только если заполнены,
 # поэтому суммы прежних тем без этих полей не меняются.
-PACKAGE_FIELDS = ["intro", "brief", "infographic", "media", "quiz"]
+PACKAGE_FIELDS = ["intro", "brief", "infographic", "media", "game", "quiz"]
+# Игра — самостоятельный модуль в content/games/<тема>/<вариант>/, открывается в изолированном iframe.
+GAME_EXT = {".html", ".js", ".css", ".json", ".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".woff2"}
+GAME_TEXT_EXT = {".html", ".js", ".css", ".json", ".svg"}
 MEDIA_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"}
 FILE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 FIG_RE = re.compile(r'^!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)\s*$')
@@ -150,7 +153,16 @@ def media_dir(project, lid):
     return project.content / "media" / lid
 
 
-def collect_extras(project, lid, v, body, r=None, where=""):
+def game_dir(project, lid, vname):
+    return project.content / "games" / lid / vname
+
+
+def game_files(project, lid, vname):
+    d = game_dir(project, lid, vname)
+    return sorted(p for p in d.rglob("*") if p.is_file()) if d.exists() else []
+
+
+def collect_extras(project, lid, v, body, r=None, where="", vname=None):
     """Тексты и файлы учебного пакета варианта, входящие в контрольную сумму: введение, выжимка,
     тест и хеши иллюстраций. Пустой словарь, если пакет не заполнен."""
     d, ex = project.lesson_dir(lid), {}
@@ -181,6 +193,11 @@ def collect_extras(project, lid, v, body, r=None, where=""):
             images[name] = file_sha256(p)
     if images:
         ex["images"] = images
+    if v.get("game") and vname:
+        d = game_dir(project, lid, vname)
+        files = {str(p.relative_to(d)).replace("\\", "/"): file_sha256(p) for p in game_files(project, lid, vname)}
+        if files:
+            ex["game"] = files
     return ex
 
 
@@ -255,10 +272,15 @@ def history_snapshots(project, lesson_id, variant):
         lesson_like = {"lessonId": lesson_id, "title": snap["title"], "variants": {variant: snap["variant"]}}
         extras = snap.get("extras") or {}
         valid = approval_problem(lesson_like, variant, body, extras) is None
-        # Изображения не хранятся в снимке: версия пригодна, только если файлы не изменились.
+        # Изображения и файлы игры не хранятся в снимке: версия пригодна, только если файлы не изменились.
         for name, sha in (extras.get("images") or {}).items():
             p = media_dir(project, lesson_id) / name
             if not p.exists() or file_sha256(p) != sha:
+                valid = False
+        if extras.get("game"):
+            d = game_dir(project, lesson_id, variant)
+            current = {str(p.relative_to(d)).replace("\\", "/"): file_sha256(p) for p in game_files(project, lesson_id, variant)}
+            if current != extras["game"]:
                 valid = False
         found.append({"version": snap["variant"]["version"], "meta": snap, "body": body, "valid": valid, "extras": extras,
                       "checksum": snap["variant"]["approval"]["checksum"] if snap["variant"].get("approval") else None})
@@ -555,8 +577,36 @@ def check_quiz(quiz, where, r):
     return ok
 
 
+def check_game(project, lid, vname, game, w, r):
+    """Игра: название, папка content/games/<тема>/<вариант>/ с файлом запуска, допустимые типы файлов."""
+    if not isinstance(game, dict) or not (game.get("title") or "").strip():
+        r.error(w, "game: нужно название игры (title)"); return False
+    d = game_dir(project, lid, vname)
+    entry = game.get("entry") or "index.html"
+    if not FILE_NAME_RE.match(entry) or not entry.endswith(".html"):
+        r.error(w, f"game: entry — имя HTML-файла в папке игры, а не путь: «{entry}»"); return False
+    if not (d / entry).exists():
+        r.error(w, f"game: нет файла запуска content/games/{lid}/{vname}/{entry}"); return False
+    ok, total = True, 0
+    for p in game_files(project, lid, vname):
+        rel = p.relative_to(d)
+        if p.is_symlink() or not all(FILE_NAME_RE.match(part) for part in rel.parts):
+            r.error(w, f"game: недопустимое имя или ссылка «{rel.as_posix()}»"); ok = False; continue
+        if p.suffix.lower() not in GAME_EXT:
+            r.error(w, f"game: файл «{rel.as_posix()}» недопустимого типа; разрешены {', '.join(sorted(GAME_EXT))}"); ok = False; continue
+        total += p.stat().st_size
+        if p.suffix.lower() in GAME_TEXT_EXT and re.search(r"(?:src|href)\s*=\s*[\"']?(?:https?:)?//|url\(\s*[\"']?(?:https?:)?//|fetch\(\s*[\"']https?:|import\s[^;]*[\"']https?:",
+                                                           p.read_text(encoding="utf-8", errors="replace"), re.I):
+            r.warn(w, f"game: «{rel.as_posix()}» загружает внешние ресурсы; игра должна работать автономно")
+    if total > 10 * 1024 * 1024:
+        r.warn(w, "game: папка игры больше 10 МБ; проверьте загрузку на телефоне")
+    return ok
+
+
 def check_package(project, lid, vname, v, body, extras, r, w):
     """Необязательные блоки учебного пакета варианта."""
+    if v.get("game") is not None:
+        check_game(project, lid, vname, v["game"], w, r)
     used = set()
     for key in ("intro", "brief"):
         if key in extras:
@@ -635,7 +685,7 @@ def check_lesson(project, lid, meta, owner, r):
                         r.error(w, f"editorialSections: в тексте нет раздела «## {t}»")
         elif v.get("contentKind") == "summary":
             r.error(w, "у саммари нет файла текста (body)")
-        extras = collect_extras(project, lid, v, body, r, w)
+        extras = collect_extras(project, lid, v, body, r, w, vname)
         check_package(project, lid, vname, v, body, extras, r, w)
         if v.get("editorialStatus") == "approved":
             prob = approval_problem(meta, vname, body, extras)
@@ -700,7 +750,7 @@ def resolve_variant(project, lid, vname, mode, r):
     if v.get("editorialStatus") == "archived":
         return {"state": "withdrawn", "program": []}
     body = project.body(lid, vname)
-    extras = collect_extras(project, lid, v, body)
+    extras = collect_extras(project, lid, v, body, vname=vname)
     approved_ok = body is not None and approval_problem(meta, vname, body, extras) is None
     chosen, fallback_version = None, None
     if v.get("contentKind") == "outline" and body is not None:
@@ -722,7 +772,7 @@ def resolve_variant(project, lid, vname, mode, r):
     where = f"lessons/{lid}/{vname}"
     # HTML, оглавление, текст поиска и программа строятся из одного учебного представления.
     hidden = set(vv.get("editorialSections") or [])
-    used = set()
+    used, games_used = set(), False
     link_check, image_check = make_link_check(project, where, r), make_image_check(project, lid, where, r, used)
     body_html, toc = render_markdown(learning_view(body, hidden), link_check, image_check)
     package = {}
@@ -738,6 +788,11 @@ def resolve_variant(project, lid, vname, mode, r):
         items = [x for x in (media_item(i, where, r) for i in vv.get("media") or []) if x]
         if items:
             package["media"] = items
+        game = vv.get("game")
+        if game and extras.get("game") and check_game(project, lid, vname, game, where, Report()):
+            package["game"] = {"title": game["title"].strip(), "description": game.get("description"),
+                               "src": f"games/{lid}/{vname}/{game.get('entry') or 'index.html'}"}
+            games_used = True
         quiz = extras.get("quiz")
         if quiz and check_quiz(quiz, where, Report()):
             package["quiz"] = {"version": str(quiz["version"]), "questions": [
@@ -754,6 +809,7 @@ def resolve_variant(project, lid, vname, mode, r):
         **package,
     }
     out["_images"] = sorted(used)
+    out["_game"] = games_used
     if state == "approved":
         a = vv["approval"]
         out["approval"] = {"reviewer": a["reviewer"], "date": a["date"], "version": a["version"]}
@@ -768,8 +824,9 @@ def resolve_variant(project, lid, vname, mode, r):
     return out
 
 
-def build_data(project, mode, r, images=None):
-    """images: множество (тема, файл) иллюстраций, на которые ссылается публикуемое представление."""
+def build_data(project, mode, r, images=None, games=None):
+    """images: множество (тема, файл) иллюстраций, на которые ссылается публикуемое представление;
+    games: множество (тема, вариант) опубликованных игр."""
     lessons = {}
     for m in project.modules:
         for lid in m["lessons"]:
@@ -777,10 +834,12 @@ def build_data(project, mode, r, images=None):
             if not meta:
                 continue
             variants = {vn: resolve_variant(project, lid, vn, mode, r) for vn in VARIANT_IDS}
-            for v in variants.values():
+            for vn, v in variants.items():
                 for name in v.pop("_images", []):
                     if images is not None:
                         images.add((lid, name))
+                if v.pop("_game", False) and games is not None:
+                    games.add((lid, vn))
             lessons[lid] = {
                 "id": lid, "moduleId": m["id"], "title": meta["title"], "order": meta.get("order", 1),
                 "keywords": meta.get("keywords", []), "related": meta.get("relatedLessonIds", []),
@@ -810,8 +869,8 @@ def build(project, mode, out_dir=None, allowed_parent=None):
     parent = Path(allowed_parent or project.root).resolve()
     if out.resolve() == parent or parent not in out.resolve().parents:
         raise SystemExit("Каталог сборки должен находиться внутри проекта")
-    images = set()
-    data = build_data(project, mode, r, images)
+    images, games = set(), set()
+    data = build_data(project, mode, r, images, games)
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
@@ -824,9 +883,20 @@ def build(project, mode, out_dir=None, allowed_parent=None):
             r.error("сборка", f"иллюстрация вне content/media: {src}"); continue
         (out / "media" / lid).mkdir(parents=True, exist_ok=True)
         shutil.copyfile(src, out / "media" / lid / name)
+    games_root = (project.content / "games").resolve()
+    game_out = set()
+    for lid, vn in sorted(games):
+        d = game_dir(project, lid, vn)
+        for p in game_files(project, lid, vn):
+            if games_root not in p.resolve().parents or p.suffix.lower() not in GAME_EXT:
+                r.error("сборка", f"файл игры не допущен к публикации: {p}"); continue
+            rel = f"games/{lid}/{vn}/" + str(p.relative_to(d)).replace("\\", "/")
+            (out / rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(p, out / rel)
+            game_out.add(rel)
     js = "window.LMB_DATA = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";\n"
     write_text(out / "data.js", js)
-    expected = set(SITE_FILES) | {"data.js"} | {f"media/{lid}/{name}" for lid, name in images}
+    expected = set(SITE_FILES) | {"data.js"} | {f"media/{lid}/{name}" for lid, name in images} | game_out
     actual = {str(p.relative_to(out)).replace("\\", "/") for p in out.rglob("*") if p.is_file()}
     if actual != expected:
         r.error("сборка", f"непредусмотренный состав файлов: {sorted(actual ^ expected)}")
@@ -841,7 +911,8 @@ def cmd_check(project, args):
     return 1 if r.errors else 0
 
 
-PACKAGE_LABELS = [("intro", "введение"), ("brief", "за 2 минуты"), ("infographic", "инфографика"), ("media", "видео"), ("quiz", "тест")]
+PACKAGE_LABELS = [("intro", "введение"), ("brief", "за 2 минуты"), ("infographic", "инфографика"), ("media", "видео"),
+                  ("game", "игра"), ("quiz", "тест")]
 
 
 def cmd_status(project, args):
@@ -959,6 +1030,8 @@ def cmd_demo(project, args):
     lid = module["lessons"][0]
     shutil.copytree(fixture / "lesson", src / "content" / "lessons" / lid)
     shutil.copytree(fixture / "media", src / "content" / "media" / lid)
+    if (fixture / "games").exists():
+        shutil.copytree(fixture / "games", src / "content" / "games" / lid)
     r, out = build(Project(src), "preview", demo / "site", allowed_parent=demo)
     r.print()
     print(f"Демонстрация: {out}\nОткрыть: python scripts/lmb.py serve demo  →  http://127.0.0.1:8000/#lesson/{lid}")

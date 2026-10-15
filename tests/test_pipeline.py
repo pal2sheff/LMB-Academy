@@ -261,6 +261,7 @@ class Package(Base):
         lmb.write_json(p, mods + [module])
         shutil.copytree(FIXTURE / "lesson", self.tmp / "content" / "lessons" / DEMO)
         shutil.copytree(FIXTURE / "media", self.tmp / "content" / "media" / DEMO)
+        shutil.copytree(FIXTURE / "games", self.tmp / "content" / "games" / DEMO)
 
     def files(self, out):
         return sorted(str(p.relative_to(out)).replace("\\", "/") for p in Path(out).rglob("*") if p.is_file())
@@ -296,8 +297,8 @@ class Package(Base):
         (self.tmp / "private" / "inbox" / "canary.txt").write_text("PRIVATE-CANARY-91", encoding="utf-8")
         report, out = self.build("production")
         self.assertEqual(report.errors, [])
-        self.assertEqual(self.files(out), ["app.js", "data.js", "index.html", f"media/{DEMO}/main-scheme.svg",
-                                           f"media/{DEMO}/side-figure.svg", "styles.css"])
+        self.assertEqual(self.files(out), ["app.js", "data.js", f"games/{DEMO}/doctors/index.html", "index.html",
+                                           f"media/{DEMO}/main-scheme.svg", f"media/{DEMO}/side-figure.svg", "styles.css"])
         self.assertNotIn("PRIVATE-CANARY-91", self.dist_text(out))
         v = lmb.read_data(out)["lessons"][DEMO]["variants"]["doctors"]
         self.assertEqual((v["state"], len(v["quiz"]["questions"])), ("approved", 5))
@@ -314,6 +315,34 @@ class Package(Base):
             self.assertTrue(any("контрольная сумма" in e for e in lmb.check_project(self.project()).errors), path.name)
             path.write_bytes(raw)
             self.assertEqual(lmb.check_project(self.project()).errors, [], path.name)
+
+    def test_game_block_and_files(self):
+        self.add_fixture()
+        _, out = self.build("preview")
+        data = lmb.read_data(out)
+        g = data["lessons"][DEMO]["variants"]["doctors"]["game"]
+        self.assertEqual((g["title"], g["src"]), ("Порядок блоков темы", f"games/{DEMO}/doctors/index.html"))
+        self.assertIn(f"games/{DEMO}/doctors/index.html", self.files(out))
+        self.assertNotIn("game", data["lessons"][DEMO]["variants"]["admins"])
+        # Темы без игры: блока нет, файлов игр нет.
+        self.assertFalse(any("game" in v for lid, l in data["lessons"].items() if lid != DEMO for v in l["variants"].values()))
+        _, prod = self.build("production")
+        self.assertFalse(any(f.startswith("games/") for f in self.files(prod)))
+
+    def test_game_validation_and_integrity(self):
+        self.add_fixture()
+        self.approve(DEMO)
+        game = self.tmp / "content" / "games" / DEMO / "doctors" / "index.html"
+        raw = game.read_bytes()
+        game.write_bytes(raw.replace("Порядок блоков темы".encode("utf-8"), "Другой порядок".encode("utf-8"), 1))
+        self.assertTrue(any("контрольная сумма" in e for e in lmb.check_project(self.project()).errors))
+        game.write_bytes(raw)
+        self.assertEqual(lmb.check_project(self.project()).errors, [])
+        (game.parent / "run.exe").write_bytes(b"MZ")
+        self.assertTrue(any("недопустимого типа" in e for e in lmb.check_project(self.project()).errors))
+        (game.parent / "run.exe").unlink()
+        game.rename(game.parent / "start.html")
+        self.assertTrue(any("нет файла запуска" in e for e in lmb.check_project(self.project()).errors))
 
     def test_lessons_without_package_keep_checksum(self):
         p = lmb.Project(ROOT)
