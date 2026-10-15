@@ -21,7 +21,7 @@
 | Предпросмотр с черновиками | `python scripts/lmb.py preview`, затем `python scripts/lmb.py serve preview` → http://127.0.0.1:8000 |
 | Рабочая сборка | `python scripts/lmb.py build` → папка `dist/` |
 | Посмотреть рабочую сборку | `python scripts/lmb.py serve dist --port 8001` |
-| Демонстрация учебного пакета (локально, не публикуется) | `python scripts/lmb.py demo`, затем `python scripts/lmb.py serve demo` |
+| Демонстрация учебного пакета | `python scripts/lmb.py demo`, затем `python scripts/lmb.py serve demo`; на GitHub Pages в режиме preview — https://pal2sheff.github.io/LMB-Academy/demo/#lesson/template-demo-intro (в каталог основного сайта не входит) |
 | Однофайловая версия для закрытого просмотра | `python scripts/lmb.py bundle preview` → `bundle/lmb-academy-preview.html` |
 | Новая тема | `python scripts/lmb.py new-lesson infusion infusion-vitamins --title "Витаминные инфузии"` |
 | Контрольная сумма варианта | `python scripts/lmb.py checksum infusion-intro doctors` |

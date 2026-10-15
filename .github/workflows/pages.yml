@@ -31,6 +31,12 @@ jobs:
       - name: Сборка
         run: |
           if [ "$SITE_MODE" = "dist" ]; then python scripts/lmb.py build; else python scripts/lmb.py preview; fi
+      - name: Демонстрация шаблона по отдельному адресу /demo/
+        # Нейтральная техническая фикстура; в каталог учебной базы не входит. Только в режиме preview.
+        if: env.SITE_MODE == 'preview'
+        run: |
+          python scripts/lmb.py demo
+          cp -r demo/site "$SITE_MODE/demo"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ${{ env.SITE_MODE }}
