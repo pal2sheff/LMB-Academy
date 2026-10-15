@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "lessonId": "steroid-saliva-intro",
+  "moduleId": "steroid-saliva",
+  "title": "Стероидный профиль в слюне",
+  "order": 1,
+  "keywords": [],
+  "relatedLessonIds": [
+    "hormone-intro",
+    "men-intro",
+    "women-intro",
+    "pellets-intro",
+    "estrogen-metabolites-intro"
+  ],
+  "alsoInModules": [],
+  "variants": {
+    "doctors": {
+      "version": "0.1.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": "doctors.md",
+      "updatedAt": "2026-10-14",
+      "nextReviewAt": null,
+      "goal": "Подготовка к исследованию, чтение результатов и клиническая интерпретация.",
+      "takeaway": null,
+      "scope": "Программа будущего саммари",
+      "subtitle": null,
+      "program": [
+        "Состав панели, биоматериал и метод измерения",
+        "Подготовка, время сбора, хранение и факторы, искажающие результат",
+        "Референсы конкретной лаборатории: единицы, пол, возраст, репродуктивный статус, день цикла, время суток и гормональные препараты",
+        "Кортизол: отдельная проба и суточный профиль, сопоставление с клинической задачей",
+        "ДГЭА и ДГЭА-С: различение показателей и точного состава панели",
+        "Эстрадиол, прогестерон и тестостерон: условия интерпретации каждого показателя",
+        "Соотношения кортизол/ДГЭА, прогестерон/эстрадиол и тестостерон/ДГЭА",
+        "Сопоставление с жалобами, анамнезом, лекарствами и исследованиями крови",
+        "Пошаговое заключение, типичные ошибки и обезличенные примеры",
+        "Условия повторного исследования и оценка динамики"
+      ],
+      "sources": [],
+      "claims": [],
+      "approval": null
+    },
+    "admins": {
+      "version": "0.0.0",
+      "editorialStatus": "draft",
+      "contentKind": "outline",
+      "coverage": [],
+      "body": null,
+      "updatedAt": null,
+      "nextReviewAt": null,
+      "goal": null,
+      "takeaway": null,
+      "scope": null,
+      "subtitle": null,
+      "program": [],
+      "sources": [],
+      "claims": [],
+      "approval": null,
+      "derivedFrom": null
+    }
+  }
+}

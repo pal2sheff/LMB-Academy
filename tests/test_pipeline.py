@@ -81,20 +81,66 @@ class Catalog(Base):
             for v in meta["variants"].values():
                 self.assertNotEqual(v.get("editorialStatus"), "approved", lid)
 
-    def test_a11_fifteenth_module_needs_no_counters(self):
+    def test_steroid_saliva_required_and_grouped(self):
+        mods = {m["id"]: m for m in lmb.Project(ROOT).modules}
+        m = mods["steroid-saliva"]
+        self.assertEqual((m["category"], m["displayOrder"], m["icon"]), ("Диагностика", 3, "saliva-tube"))
+        meta = lmb.Project(ROOT).lessons["steroid-saliva-intro"]["variants"]
+        self.assertEqual((meta["doctors"]["contentKind"], meta["doctors"]["editorialStatus"], meta["doctors"]["approval"]), ("outline", "draft", None))
+        self.assertIsNone(meta["admins"]["body"])
+        counts = {}
+        for x in mods.values():
+            counts[x["category"]] = counts.get(x["category"], 0) + 1
+        self.assertEqual(counts, {"Диагностика": 6, "Вмешательства": 6, "Основы и клинические направления": 3})
+        p = self.tmp / "content" / "modules.json"
+        lmb.write_json(p, [x for x in json.loads(p.read_text(encoding="utf-8")) if x["id"] != "steroid-saliva"])
+        self.assertTrue(any("steroid-saliva" in e for e in lmb.check_project(self.project()).errors))
+
+    def test_group_and_display_order_validated(self):
         p = self.tmp / "content" / "modules.json"
         mods = json.loads(p.read_text(encoding="utf-8"))
-        mods.append({"id": "test-module", "n": "15", "title": "Проверочное направление", "category": "Терапия", "icon": "cell",
-                     "lead": "Временная запись для проверки.", "keywords": [], "lessons": []})
+        mods[0]["category"] = "Терапия"
+        mods[1]["displayOrder"] = mods[2]["displayOrder"] if mods[1]["category"] == mods[2]["category"] else mods[1]["displayOrder"]
+        lmb.write_json(p, mods)
+        errors = lmb.check_project(self.project()).errors
+        self.assertTrue(any("category" in e for e in errors))
+
+    def test_a11_next_module_needs_no_counters(self):
+        p = self.tmp / "content" / "modules.json"
+        mods = json.loads(p.read_text(encoding="utf-8"))
+        before = len(mods)
+        next_n = f"{max(int(m['n']) for m in mods) + 1:02d}"
+        next_order = max(m["displayOrder"] for m in mods if m["category"] == "Вмешательства") + 1
+        mods.append({"id": "test-module", "n": next_n, "title": "Проверочное направление", "category": "Вмешательства",
+                     "displayOrder": next_order, "icon": "doc-unknown", "lead": "Временная запись для проверки.", "keywords": [], "lessons": []})
         lmb.write_json(p, mods)
         self.assertEqual(self.run_cli("new-lesson", "test-module", "test-module-intro", "--title", "Проверочная тема"), 0)
         report, out = self.build("preview")
         self.assertEqual(report.errors, [])
+        self.assertTrue(any("иконки" in w for w in report.warnings))
         data = lmb.read_data(out)
-        self.assertEqual(len(data["modules"]), 15)
+        self.assertEqual(len(data["modules"]), before + 1)
+        self.assertEqual(len({m["n"] for m in data["modules"]}), before + 1)
         app = (ROOT / "site" / "app.js").read_text(encoding="utf-8")
         app = re.sub(r"const iconPaths = \{.*?\};", "", app, flags=re.S)  # координаты SVG не являются счётчиками
-        self.assertNotRegex(app, r"\b1[48]\b")
+        self.assertNotRegex(app, r"\b1[4589]\b")
+
+    def test_editorial_sections_hidden_from_learning_view(self):
+        _, out = self.build("preview")
+        data = lmb.read_data(out)
+        mito = data["lessons"]["mito-intro"]["variants"]["doctors"]
+        for part in (mito["html"], mito["text"], json.dumps(mito["toc"], ensure_ascii=False), " ".join(mito["program"])):
+            self.assertNotIn("Что дополнить в полном врачебном саммари", part)
+        self.assertIn("Типичные ошибки", mito["html"])
+        genetics = data["lessons"]["genetics-intro"]["variants"]["doctors"]
+        self.assertNotIn("Материалы для наполнения", " ".join(genetics["program"]))
+        self.assertNotIn("Задача раздела", genetics["text"])
+        md = (ROOT / "content" / "lessons" / "mito-intro" / "doctors.md").read_text(encoding="utf-8")
+        self.assertIn("## Что дополнить в полном врачебном саммари", md)
+
+    def test_unknown_editorial_section_detected(self):
+        self.edit_meta("mito-intro", lambda m: m["variants"]["doctors"]["editorialSections"].append("Нет такого раздела"))
+        self.assertTrue(any("Нет такого раздела" in e for e in lmb.check_project(self.project()).errors))
 
 
 class Publication(Base):

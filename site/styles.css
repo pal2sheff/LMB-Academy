@@ -27,7 +27,9 @@ main:focus, .text-section:focus { outline: none; }
 /* Каркас и боковое меню */
 .shell { display: grid; grid-template-columns: 250px minmax(0, 1fr); max-width: 1440px; margin: 0 auto; }
 .sidebar { border-right: 1px solid var(--line); position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto; overscroll-behavior: contain; padding: 16px 12px; }
-.sidebar nav a { display: block; padding: 8px 12px; border-radius: var(--radius); color: var(--text); text-decoration: none; font-size: 15px; line-height: 1.35; }
+.sidebar nav a { display: flex; align-items: flex-start; gap: 8px; padding: 7px 10px; border-radius: var(--radius); color: var(--text); text-decoration: none; font-size: 15px; line-height: 1.35; }
+.sidebar nav a .ico { width: 17px; height: 17px; margin-top: 1px; color: inherit; }
+.nav-group { margin: 16px 10px 4px; font-size: 13px; font-weight: bold; color: var(--muted); line-height: 1.3; }
 .sidebar nav a:hover { background: var(--green-soft); }
 .sidebar nav a.active { background: var(--green); color: #fff; }
 .sidebar .all-link { font-weight: bold; margin-bottom: 8px; }
@@ -59,9 +61,17 @@ footer { max-width: 1440px; margin: 0 auto; padding: 16px 24px; border-top: 1px 
 
 /* Списки направлений и тем */
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.list.catalog { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.list a { display: flex; flex-direction: column; gap: 4px; height: 100%; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); color: var(--text); text-decoration: none; }
+.list.catalog { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.list a { display: flex; align-items: flex-start; gap: 10px; height: 100%; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); color: var(--text); text-decoration: none; }
 .list a:hover { border-color: var(--green); }
+.item-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ico { width: 19px; height: 19px; flex-shrink: 0; color: var(--green); }
+.list a .ico { margin-top: 2px; }
+.sidebar nav a.active .ico { color: inherit; }
+.group { margin-bottom: 28px; }
+.group-title { font-size: 20px; margin: 0 0 10px; }
+.page-title.with-icon { display: flex; align-items: flex-start; gap: 10px; }
+.ico-title { width: 22px; height: 22px; margin-top: 0.3em; }
 .item-title { font-size: 17.5px; font-weight: bold; line-height: 1.35; overflow-wrap: break-word; }
 .item-sub { font-size: 14px; color: var(--muted); }
 .item-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
@@ -147,6 +157,8 @@ th, td { border-bottom: 1px solid var(--line); padding: 8px; text-align: left; v
   footer { padding: 16px; }
   .list.catalog { grid-template-columns: minmax(0, 1fr); }
   .page-title { font-size: 27px; }
+  .ico-title { width: 20px; height: 20px; }
+  .group { margin-bottom: 24px; }
   .text, .takeaway { font-size: 17px; line-height: 1.7; }
   .text-section h2 { font-size: 21px; }
   .roles { margin-bottom: 16px; }

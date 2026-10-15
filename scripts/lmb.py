@@ -34,7 +34,14 @@ COVERAGE = {"concept", "safety", "clinical", "interpretation"}
 # Порядок и ID 14 направлений из ТЗ (раздел 3). Новые направления добавляются после них.
 CANONICAL_MODULE_IDS = ["mito", "infusion", "peptide", "hormone", "ozone", "lymph", "aging", "men", "women",
                         "pellets", "genetics", "estrogen-metabolites", "hms-osipov", "organic-acids"]
-PUBLIC_SOURCE_FIELDS = {"id", "title", "author", "year", "type", "url", "note"}
+# Направления, добавленные после первоначальных 14 и обязательные в каталоге.
+REQUIRED_EXTRA_MODULE_IDS = ["steroid-saliva"]
+# Группы каталога в порядке показа (LMB_Audit_v2.md, раздел 3).
+GROUPS = [("diagnostics", "Диагностика"), ("interventions", "Вмешательства"), ("foundations", "Основы и клинические направления")]
+# Ключи встроенных иконок из site/app.js; неизвестный ключ показывается нейтральной иконкой документа.
+ICON_KEYS = {"mitochondrion", "dna", "saliva-tube", "urine-molecule", "chromatogram", "urine-cycle", "infusion-bag",
+             "peptide-chain", "hormone-receptor", "pellet-implant", "ozone-molecule", "lymph-vessel", "cell-clock", "male", "female"}
+PUBLIC_SOURCE_FIELDS ={"id", "title", "author", "year", "type", "url", "note"}
 SITE_FILES = ["index.html", "app.js", "styles.css"]
 ID_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
@@ -108,7 +115,28 @@ class Project:
 
 # ---------------------------------------------------------------- контрольная сумма
 
-CHECKSUM_FIELDS = ["version", "contentKind", "coverage", "goal", "takeaway", "scope", "subtitle", "sources", "claims", "derivedFrom"]
+CHECKSUM_FIELDS = ["version", "contentKind", "coverage", "goal", "takeaway", "scope", "subtitle", "editorialSections",
+                   "sources", "claims", "derivedFrom"]
+
+
+def split_sections(md):
+    """[(заголовок ## или None для вступления, текст фрагмента)]"""
+    parts, title, buf = [], None, []
+    for line in md.replace("\r\n", "\n").split("\n"):
+        m = re.match(r"^##\s+(.+?)\s*#*\s*$", line)
+        if m and not line.startswith("###"):
+            parts.append((title, "\n".join(buf)))
+            title, buf = m.group(1), [line]
+        else:
+            buf.append(line)
+    parts.append((title, "\n".join(buf)))
+    return [p for p in parts if p[0] is not None or p[1].strip()]
+
+
+def learning_view(md, editorial):
+    """Текст учебного представления: без разделов, отмеченных в editorialSections. Исходник не меняется."""
+    hidden = set(editorial or [])
+    return "\n".join(text for title, text in split_sections(md) if title not in hidden).strip("\n") + "\n"
 
 
 def compute_checksum(lesson_meta, variant, body_text):
@@ -281,9 +309,22 @@ def check_project(project, report=None):
     mods = project.modules
     ids = [m.get("id") for m in mods]
     present = [i for i in ids if i in CANONICAL_MODULE_IDS]
-    for cid in CANONICAL_MODULE_IDS:
+    for cid in CANONICAL_MODULE_IDS + REQUIRED_EXTRA_MODULE_IDS:
         if cid not in ids:
             r.error("modules.json", f"отсутствует постоянное направление «{cid}»")
+    group_titles = [t for _, t in GROUPS]
+    seen_order = set()
+    for m in mods:
+        where = f"modules.json/{m.get('id')}"
+        if m.get("category") not in group_titles:
+            r.error(where, f"category должна быть одной из групп: {', '.join(group_titles)}")
+        if not isinstance(m.get("displayOrder"), int) or isinstance(m.get("displayOrder"), bool):
+            r.error(where, "displayOrder должен быть целым числом")
+        elif (m.get("category"), m["displayOrder"]) in seen_order:
+            r.error(where, f"displayOrder {m['displayOrder']} уже занят в группе «{m.get('category')}»")
+        seen_order.add((m.get("category"), m.get("displayOrder")))
+        if m.get("icon") not in ICON_KEYS:
+            r.warn(where, f"неизвестный ключ иконки «{m.get('icon')}»; будет показана нейтральная иконка")
     if present != [c for c in CANONICAL_MODULE_IDS if c in ids]:
         r.error("modules.json", "нарушен порядок постоянных направлений из ТЗ")
     seen_ids, seen_n, owner = set(), set(), {}
@@ -381,6 +422,10 @@ def check_lesson(project, lid, meta, owner, r):
                     render_markdown(body, make_link_check(project, w, r))
                 except MarkdownError as e:
                     r.error(w, str(e))
+                titles = {t for t, _ in split_sections(body) if t}
+                for t in v.get("editorialSections") or []:
+                    if t not in titles:
+                        r.error(w, f"editorialSections: в тексте нет раздела «## {t}»")
         elif v.get("contentKind") == "summary":
             r.error(w, "у саммари нет файла текста (body)")
         if v.get("editorialStatus") == "approved":
@@ -436,7 +481,9 @@ def resolve_variant(project, lid, vname, mode, r):
     """Что показывать на сайте для варианта темы в данном режиме сборки."""
     meta = project.lessons[lid]
     v = meta["variants"].get(vname)
-    base = {"state": "pending", "program": (v or {}).get("program") or [], "programNote": (v or {}).get("programNote")}
+    hidden = set((v or {}).get("editorialSections") or [])
+    base = {"state": "pending", "program": [p for p in (v or {}).get("program") or [] if p not in hidden],
+            "programNote": (v or {}).get("programNote")}
     if not v:
         return base
     if v.get("withdrawn"):
@@ -463,12 +510,15 @@ def resolve_variant(project, lid, vname, mode, r):
         return base
     state, vv, body = chosen
     where = f"lessons/{lid}/{vname}"
-    body_html, toc = render_markdown(body, make_link_check(project, where, r))
+    # HTML, оглавление, текст поиска и программа строятся из одного учебного представления.
+    hidden = set(vv.get("editorialSections") or [])
+    body_html, toc = render_markdown(learning_view(body, hidden), make_link_check(project, where, r))
     out = {
         "state": state, "version": vv["version"], "updatedAt": vv.get("updatedAt"), "nextReviewAt": vv.get("nextReviewAt"),
         "goal": vv.get("goal"), "takeaway": vv.get("takeaway"), "scope": vv.get("scope"), "subtitle": vv.get("subtitle"),
         "coverage": vv.get("coverage", []),
-        "html": body_html, "toc": toc, "program": vv.get("program") or [t["title"] for t in toc],
+        "html": body_html, "toc": toc,
+        "program": [p for p in vv.get("program") or [] if p not in hidden] or [t["title"] for t in toc],
         "sources": [{"id": s["id"], "locator": s.get("locator"), "supports": s.get("supports")} for s in vv.get("sources", [])],
         "text": html_to_text(body_html),
     }
@@ -504,7 +554,9 @@ def build_data(project, mode, r):
     return {
         "build": {"mode": mode, "builtAt": dt.date.today().isoformat()},
         "variants": [{"id": v, "label": label} for v, label in VARIANTS],
-        "modules": [{k: m.get(k) for k in ("id", "n", "title", "category", "icon", "lead", "keywords", "lessons")} for m in project.modules],
+        "groups": [{"id": gid, "title": title} for gid, title in GROUPS],
+        "modules": [{k: m.get(k) for k in ("id", "n", "title", "category", "displayOrder", "icon", "lead", "keywords", "lessons")}
+                    for m in project.modules],
         "lessons": lessons, "sources": sources, "synonyms": project.synonyms,
     }
 

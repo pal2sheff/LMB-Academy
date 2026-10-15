@@ -13,7 +13,7 @@
   },
   "variants": {
     "doctors": {
-      "version": "0.1.1",
+      "version": "0.1.2",
       "editorialStatus": "draft",
       "contentKind": "summary",
       "coverage": [
@@ -34,6 +34,9 @@
         "Подкожное введение",
         "Наблюдение и реакции",
         "Оценка курса",
+        "Что требуется для полного модуля"
+      ],
+      "editorialSections": [
         "Что требуется для полного модуля"
       ],
       "sources": [
