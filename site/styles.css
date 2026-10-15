@@ -22,6 +22,10 @@ main:focus, .text-section:focus { outline: none; }
 .topbar { height: 60px; display: flex; align-items: center; gap: 16px; padding: 0 24px; background: var(--surface); border-bottom: 1px solid var(--line); }
 .brand { font-size: 18px; font-weight: bold; color: var(--text); text-decoration: none; }
 .mode-label { font-size: 13px; color: var(--wine); border: 1px solid currentColor; border-radius: var(--radius); padding: 1px 8px; }
+.demo-link { font-size: 14px; color: var(--green); border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 4px 10px; text-decoration: none; white-space: nowrap; }
+.demo-link:hover { border-color: var(--green); }
+.demo-link .short { display: none; }
+.brand { white-space: nowrap; }
 .menu-toggle { display: none; margin-left: auto; background: none; border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 8px 14px; font-size: 15px; min-height: 44px; }
 
 /* Каркас и боковое меню */
@@ -200,7 +204,9 @@ body.game-open { overflow: hidden; }
   main { padding: 24px 24px 48px; }
 }
 @media (max-width: 760px) {
-  .topbar { height: 56px; padding: 0 16px; }
+  .topbar { height: 56px; padding: 0 16px; gap: 8px; }
+  .brand { font-size: 16px; }
+  .mode-label, .demo-link { font-size: 12.5px; padding: 2px 6px; }
   .menu-toggle { display: block; }
   .shell { display: block; }
   .sidebar { display: none; position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); background: var(--surface); padding: 8px 16px 16px; }
@@ -218,6 +224,14 @@ body.game-open { overflow: hidden; }
   .pager { flex-direction: column; }
   .pager a { max-width: 100%; }
   .pager a.next { text-align: left; margin-left: 0; }
+}
+@media (max-width: 420px) {
+  .topbar { gap: 6px; padding: 0 12px; }
+  .brand { font-size: 15px; }
+  .mode-label, .demo-link { font-size: 12px; padding: 2px 5px; }
+  .demo-link .long { display: none; }
+  .demo-link .short { display: inline; }
+  .menu-toggle { padding: 6px 8px; flex-shrink: 0; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 @media print {

@@ -592,6 +592,10 @@
   });
   document.querySelector('.skip-link').addEventListener('click', e => { e.preventDefault(); main.focus(); main.scrollIntoView({block: 'start'}); });
   document.getElementById('mode-label').hidden = D.build.mode !== 'preview';
+  // Временная кнопка «Демонстрация»: показывается, только если рядом опубликована демонстрация шаблона (/demo/).
+  if (D.build.mode === 'preview' && !embedded) {
+    fetch('demo/data.js', {method: 'HEAD'}).then(r => { if (r.ok) document.getElementById('demo-link').hidden = false; }).catch(() => {});
+  }
   window.addEventListener('beforeprint', () => document.querySelectorAll('details.block').forEach(d => { d.open = true; }));
   window.addEventListener('hashchange', route);
   route();
